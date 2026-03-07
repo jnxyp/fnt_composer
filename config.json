@@ -4,7 +4,11 @@
     "atlas_height": 512,
     "padding": 2,
     "on_missing": "skip",
-    "clean_output": true
+    "clean_output": true,
+    "overrides": {
+      "{": { "xadvance": 0, "width": 0, "height": 0 },
+      "}": { "xadvance": 0, "width": 0, "height": 0 }
+    }
   },
 
   "outputs": [
