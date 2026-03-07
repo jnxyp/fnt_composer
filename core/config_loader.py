@@ -11,26 +11,36 @@ class SourceConfig:
     color: tuple = (255, 255, 255)
     stroke_width: int = 0
     stroke_color: tuple = (0, 0, 0)
+    yoffset_adjust: int = 0
 
 
 @dataclass
 class OutputConfig:
     name: str
-    dir: str
     sources: list[SourceConfig]
     char_ids: set[int]
     atlas_width: int = 512
     atlas_height: int = 512
     padding: int = 2
     on_missing: str = "skip"
+    overrides: dict = None  # dict[int, dict]，key 为 char_id
 
 
-def load(config_path: str) -> list[OutputConfig]:
+@dataclass
+class RunConfig:
+    out_dir: str
+    clean_output: bool
+    outputs: list[OutputConfig]
+
+
+def load(config_path: str) -> RunConfig:
     with open(config_path, encoding="utf-8") as f:
         raw = json.load(f)
 
     defaults = raw.get("defaults", {})
     base_dir = os.path.dirname(os.path.abspath(config_path))
+    out_dir = os.path.join(base_dir, defaults.get("dir", "output"))
+    clean_output = defaults.get("clean_output", True)
     outputs = []
 
     for out in raw["outputs"]:
@@ -39,18 +49,29 @@ def load(config_path: str) -> list[OutputConfig]:
 
         char_ids = _expand_chars(out.get("chars", []), base_dir)
 
+        # 合并 defaults 和 per-output 的 overrides
+        merged_overrides = {**defaults.get("overrides", {}), **out.get("overrides", {})}
         outputs.append(OutputConfig(
             name=out["name"],
-            dir=os.path.join(base_dir, out.get("dir", "output")),
             sources=sources,
             char_ids=char_ids,
             atlas_width=out.get("atlas_width", defaults.get("atlas_width", 512)),
             atlas_height=out.get("atlas_height", defaults.get("atlas_height", 512)),
             padding=out.get("padding", defaults.get("padding", 2)),
             on_missing=out.get("on_missing", defaults.get("on_missing", "skip")),
+            overrides=_parse_overrides(merged_overrides),
         ))
 
-    return outputs
+    return RunConfig(out_dir=out_dir, clean_output=clean_output, outputs=outputs)
+
+
+def _parse_overrides(raw: dict) -> dict:
+    """将 {"字": {field: val}} 转为 {char_id: {field: val}}"""
+    result = {}
+    for key, fields in raw.items():
+        char_id = ord(key) if len(key) == 1 else int(key)
+        result[char_id] = fields
+    return result
 
 
 def _parse_sources(raw_sources: list, base_dir: str) -> list[SourceConfig]:
@@ -65,6 +86,7 @@ def _parse_sources(raw_sources: list, base_dir: str) -> list[SourceConfig]:
             color=color,
             stroke_width=s.get("stroke_width", 0),
             stroke_color=stroke_color,
+            yoffset_adjust=s.get("yoffset_adjust", 0),
         ))
     return result
 

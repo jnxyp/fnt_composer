@@ -20,6 +20,7 @@ def extract(
         font_data = f.read()
     face = freetype.Face(io.BytesIO(font_data))
     face.set_pixel_sizes(0, size)
+    ascender = face.size.ascender >> 6  # 基线距字形格顶部的像素数
 
     glyphs: dict[int, Glyph] = {}
 
@@ -35,7 +36,7 @@ def extract(
 
         w, h = bitmap.width, bitmap.rows
         xoffset = slot.bitmap_left
-        yoffset = size - slot.bitmap_top   # 转为从顶部算的 yoffset
+        yoffset = ascender - slot.bitmap_top   # 转为从顶部算的 yoffset
         xadvance = slot.advance.x >> 6
 
         if w == 0 or h == 0:

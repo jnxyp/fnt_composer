@@ -1,11 +1,18 @@
 import sys
+import os
+import shutil
 from core import config_loader, fnt_parser, ttf_extractor, glyph_merger, atlas_packer, fnt_writer
 
 
 def run(config_path: str = "config.json"):
-    outputs = config_loader.load(config_path)
+    run_cfg = config_loader.load(config_path)
+    out_dir = run_cfg.out_dir
 
-    for out in outputs:
+    if run_cfg.clean_output and os.path.isdir(out_dir):
+        shutil.rmtree(out_dir)
+        print(f"[clean] {out_dir}")
+
+    for out in run_cfg.outputs:
         print(f"\n=== {out.name} ===")
 
         # 1. 按来源提取字形
@@ -29,6 +36,7 @@ def run(config_path: str = "config.json"):
                 page_offset = len(all_fnt_pages)
                 for g in glyphs.values():
                     g.src_page += page_offset
+                    g.yoffset += src.yoffset_adjust
                 all_fnt_pages.extend(pages)
                 all_fnt_glyphs.update(glyphs)
                 all_fnt_kernings.extend(kernings)
@@ -59,6 +67,9 @@ def run(config_path: str = "config.json"):
                         "base": src.size,
                         "alphaChnl": 1, "redChnl": 0, "greenChnl": 0, "blueChnl": 0,
                     }
+                if src.yoffset_adjust:
+                    for g in glyphs.values():
+                        g.yoffset += src.yoffset_adjust
                 ttf_glyphs_all.update(glyphs)
 
         # 2. 合并（fnt 优先）
@@ -78,7 +89,21 @@ def run(config_path: str = "config.json"):
             out.atlas_width, out.atlas_height, out.padding,
         )
 
-        # 4. 过滤 kerning（只保留两端字符都在结果集里的 pair）
+        # 4. 应用 overrides
+        _FIELD_MAP = {
+            "x": "dst_x", "y": "dst_y",
+            "xoffset": "xoffset", "yoffset": "yoffset",
+            "xadvance": "xadvance", "width": "width", "height": "height",
+        }
+        for char_id, fields in (out.overrides or {}).items():
+            if char_id not in merged:
+                continue
+            g = merged[char_id]
+            for field, val in fields.items():
+                attr = _FIELD_MAP.get(field) or field
+                setattr(g, attr, val)
+
+        # 5. 过滤 kerning（只保留两端字符都在结果集里的 pair）
         char_set = set(merged.keys())
         filtered_kernings = [
             (f, s, a) for f, s, a in all_fnt_kernings
@@ -86,7 +111,7 @@ def run(config_path: str = "config.json"):
         ]
 
         # 5. 输出
-        fnt_writer.write(out.dir, out.name, merged, pages, all_fnt_info, filtered_kernings)
+        fnt_writer.write(out_dir, out.name, merged, pages, all_fnt_info, filtered_kernings)
 
 
 if __name__ == "__main__":

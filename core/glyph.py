@@ -22,14 +22,29 @@ class Glyph:
     dst_x: int = 0
     dst_y: int = 0
 
+    _width_override: int = None
+    _height_override: int = None
+
     @property
     def width(self) -> int:
+        if self._width_override is not None:
+            return self._width_override
         if self.src_image is not None:
             return self.src_image.width
         return self.src_w
 
+    @width.setter
+    def width(self, v: int):
+        self._width_override = v
+
     @property
     def height(self) -> int:
+        if self._height_override is not None:
+            return self._height_override
         if self.src_image is not None:
             return self.src_image.height
         return self.src_h
+
+    @height.setter
+    def height(self, v: int):
+        self._height_override = v
