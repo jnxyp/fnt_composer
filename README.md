@@ -121,7 +121,7 @@ outputs:
 
 ### sources — fnt 来源
 
-从已有 `.fnt` 文件复制字形，像素完全保真，不做重采样。
+从已有 `.fnt` 文件提取字形，像素完全保真，不做重采样。字形会从原始纹理裁剪后，与 ttf 来源字形一起统一重新装箱排布。
 
 ```yaml
 - type: fnt
@@ -218,10 +218,10 @@ outputs:
   └─ 对每个 output：
        1. 展开 chars → char_id 集合
        2. 按 sources 顺序：
-            fnt 来源 → 解析 .fnt，整张 page 复制到图集
+            fnt 来源 → 解析 .fnt，从原始纹理裁剪各字形像素
             ttf 来源 → 渲染缺失字符
        3. 合并字形（fnt 优先，先列出的来源优先）
-       4. 装箱：fnt page 整块保留，ttf 字形用 Shelf 算法填入剩余空间
+       4. 装箱：所有字形按高度降序统一用 Shelf 算法重新排布
        5. 应用 overrides
        6. 写出 .fnt + .png
 ```
