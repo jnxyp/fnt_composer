@@ -6,14 +6,16 @@ from core import config_loader, fnt_parser, ttf_extractor, glyph_merger, atlas_p
 
 def run(config_path: str = "config.json"):
     run_cfg = config_loader.load(config_path)
-    out_dir = run_cfg.out_dir
 
-    if run_cfg.clean_output and os.path.isdir(out_dir):
-        shutil.rmtree(out_dir)
-        print(f"[clean] {out_dir}")
+    if run_cfg.clean_output:
+        for d in dict.fromkeys(out.out_dir for out in run_cfg.outputs):
+            if os.path.isdir(d):
+                shutil.rmtree(d)
+                print(f"[clean] {d}")
 
     for out in run_cfg.outputs:
-        print(f"\n=== {out.name} ===")
+        label = f"{out.dir}/{out.name}" if out.dir else out.name
+        print(f"\n=== {label} ===")
 
         # 1. 按来源提取字形
         fnt_glyphs_list = []   # list of dict[int, Glyph]，来自 fnt sources
@@ -53,6 +55,9 @@ def run(config_path: str = "config.json"):
                     color=src.color,
                     stroke_width=src.stroke_width,
                     stroke_color=src.stroke_color,
+                    supersample=src.supersample,
+                    hinting=src.hinting,
+                    bold=src.bold,
                 )
                 # 如果 fnt 没有提供 info，用 ttf 配置补充
                 if not all_fnt_info:
@@ -111,9 +116,9 @@ def run(config_path: str = "config.json"):
         ]
 
         # 5. 输出
-        fnt_writer.write(out_dir, out.name, merged, pages, all_fnt_info, filtered_kernings)
+        fnt_writer.write(out.out_dir, out.name, merged, pages, all_fnt_info, filtered_kernings)
 
 
 if __name__ == "__main__":
-    config = sys.argv[1] if len(sys.argv) > 1 else "config.json"
+    config = sys.argv[1] if len(sys.argv) > 1 else "config.yml"
     run(config)

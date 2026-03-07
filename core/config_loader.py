@@ -1,5 +1,5 @@
-import json
 import os
+import yaml
 from dataclasses import dataclass, field
 
 
@@ -12,6 +12,9 @@ class SourceConfig:
     stroke_width: int = 0
     stroke_color: tuple = (0, 0, 0)
     yoffset_adjust: int = 0
+    supersample: int = 1        # 超采样倍数，1=不超采样，2/4=2x/4x
+    hinting: str = "normal"     # "normal" | "light" | "none"
+    bold: float = 0             # alpha 膨胀加粗（目标尺寸像素数，0=不加粗）
 
 
 @dataclass
@@ -19,6 +22,8 @@ class OutputConfig:
     name: str
     sources: list[SourceConfig]
     char_ids: set[int]
+    out_dir: str = "output"
+    dir: str = ""
     atlas_width: int = 512
     atlas_height: int = 512
     padding: int = 2
@@ -28,18 +33,16 @@ class OutputConfig:
 
 @dataclass
 class RunConfig:
-    out_dir: str
     clean_output: bool
     outputs: list[OutputConfig]
 
 
 def load(config_path: str) -> RunConfig:
     with open(config_path, encoding="utf-8") as f:
-        raw = json.load(f)
+        raw = yaml.safe_load(f)
 
     defaults = raw.get("defaults", {})
     base_dir = os.path.dirname(os.path.abspath(config_path))
-    out_dir = os.path.join(base_dir, defaults.get("dir", "output"))
     clean_output = defaults.get("clean_output", True)
     outputs = []
 
@@ -49,12 +52,18 @@ def load(config_path: str) -> RunConfig:
 
         char_ids = _expand_chars(out.get("chars", []), base_dir)
 
+        # per-output dir: output/<dir> 或 output
+        sub = out.get("dir", "")
+        out_dir = os.path.join(base_dir, "output", sub) if sub else os.path.join(base_dir, "output")
+
         # 合并 defaults 和 per-output 的 overrides
         merged_overrides = {**defaults.get("overrides", {}), **out.get("overrides", {})}
         outputs.append(OutputConfig(
             name=out["name"],
             sources=sources,
             char_ids=char_ids,
+            out_dir=out_dir,
+            dir=sub,
             atlas_width=out.get("atlas_width", defaults.get("atlas_width", 512)),
             atlas_height=out.get("atlas_height", defaults.get("atlas_height", 512)),
             padding=out.get("padding", defaults.get("padding", 2)),
@@ -62,7 +71,7 @@ def load(config_path: str) -> RunConfig:
             overrides=_parse_overrides(merged_overrides),
         ))
 
-    return RunConfig(out_dir=out_dir, clean_output=clean_output, outputs=outputs)
+    return RunConfig(clean_output=clean_output, outputs=outputs)
 
 
 def _parse_overrides(raw: dict) -> dict:
@@ -87,6 +96,9 @@ def _parse_sources(raw_sources: list, base_dir: str) -> list[SourceConfig]:
             stroke_width=s.get("stroke_width", 0),
             stroke_color=stroke_color,
             yoffset_adjust=s.get("yoffset_adjust", 0),
+            supersample=s.get("supersample", 1),
+            hinting=s.get("hinting", "normal"),
+            bold=s.get("bold", 0),
         ))
     return result
 

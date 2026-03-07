@@ -1,0 +1,161 @@
+# ============================================================
+# fnt_composer 完整配置项说明（所有字段均可选，除非标注"必填"）
+#
+# defaults:
+#   clean_output: true            # 运行前清空各输出目录
+#   atlas_width: 512              # 图集宽度（px）
+#   atlas_height: 512             # 图集高度（px，-1 表示高度自动扩展）
+#   padding: 2                    # 字形间距（px）
+#   on_missing: skip              # 缺失字符处理：skip（跳过并警告）| error（报错）
+#   overrides:                    # 对所有 output 生效的字符属性覆盖
+#     "字": { xadvance: 0, width: 0, height: 0 }
+#             # 可覆盖字段：x, y, xoffset, yoffset, xadvance, width, height
+#
+# outputs:
+#   - name: my_font               # [必填] 输出文件名（不含扩展名）
+#     dir: subfolder              # 输出子目录，结果写入 output/<dir>/（默认直接写 output/）
+#     atlas_width: 2048           # 覆盖 defaults.atlas_width
+#     atlas_height: -1            # 覆盖 defaults.atlas_height
+#     padding: 2                  # 覆盖 defaults.padding
+#     on_missing: skip            # 覆盖 defaults.on_missing
+#     chars:                      # [必填] 要渲染的字符集，可混合以下三种写法
+#       - "ABC123"                      # 直接内联字符串
+#       - { file: charset/chars.txt }   # 文件（UTF-8，每行每字，# 开头行为注释）
+#       - { range: [0x4E00, 0x9FFF] }   # Unicode 码位范围（含首尾）
+#     overrides:                  # 覆盖特定字符属性（合并自 defaults.overrides）
+#       "字": { xadvance: 10 }
+#     sources:                    # [必填] 字形来源列表（fnt 必须在 ttf 之前）
+#
+#       # --- fnt 来源：从已有 .fnt 文件复制字形 ---
+#       - type: fnt
+#         path: source/font.fnt       # [必填] .fnt 文件路径（相对项目根目录）
+#         yoffset_adjust: 0           # 整体 yoffset 调整量（正数下移，负数上移）
+#
+#       # --- ttf 来源：从 TTF 文件渲染字形（填补 fnt 未覆盖的字符）---
+#       - type: ttf
+#         path: source/font.ttf       # [必填] TTF 文件路径
+#         size: 16                    # [必填] 渲染字号（px）
+#         color: [255, 255, 255]      # 字形颜色 RGB（默认白色）
+#         stroke_width: 0             # 描边宽度（px，0=不描边）
+#         stroke_color: [0, 0, 0]     # 描边颜色 RGB
+#         yoffset_adjust: 0           # 整体 yoffset 调整量
+#         supersample: 1             # 超采样倍数（1/2/4/8），越大质量越高但越慢
+#         hinting: normal            # hinting 模式：normal | light（推荐）| none
+#         bold: 0                    # alpha 膨胀加粗（目标尺寸像素数，0=不加粗，支持小数）
+# ============================================================
+
+defaults:
+  atlas_width: 512
+  atlas_height: 512
+  padding: 2
+  on_missing: skip
+  clean_output: true
+  overrides:
+    "{": { xadvance: 0, width: 0, height: 0 }
+    "}": { xadvance: 0, width: 0, height: 0 }
+
+outputs:
+  # - name: insignia15LTaa
+  #   dir: lantinghei
+  #   atlas_width: 2048
+  #   atlas_height: -1
+  #   sources:
+  #     - type: fnt
+  #       path: source/insignia15LTaa.fnt
+  #     - type: ttf
+  #       path: "source/方正兰亭中粗黑.ttf"
+  #       size: 15
+  #       color: [255, 255, 255]
+  #       yoffset_adjust: -1
+  #       supersample: 8
+  #       hinting: light
+  #   chars:
+  #     - { file: charset/chars.txt }
+
+  # - name: insignia21LTaa
+  #   dir: lantinghei
+  #   atlas_width: 2048
+  #   atlas_height: -1
+  #   sources:
+  #     - type: fnt
+  #       path: source/insignia21LTaa.fnt
+  #     - type: ttf
+  #       path: "source/方正兰亭中粗黑.ttf"
+  #       size: 21
+  #       color: [255, 255, 255]
+  #       yoffset_adjust: -1
+  #       supersample: 4
+  #       hinting: light
+  #   chars:
+  #     - { file: charset/chars.txt }
+
+  # - name: insignia25LTaa
+  #   dir: lantinghei
+  #   atlas_width: 2048
+  #   atlas_height: -1
+  #   sources:
+  #     - type: fnt
+  #       path: source/insignia25LTaa.fnt
+  #     - type: ttf
+  #       path: "source/方正兰亭中粗黑.ttf"
+  #       size: 25
+  #       color: [255, 255, 255]
+  #       yoffset_adjust: -1
+  #       supersample: 4
+  #       hinting: light
+  #   chars:
+  #     - { file: charset/chars.txt }
+
+  - name: insignia15LTaa
+    dir: lxgw
+    atlas_width: 2048
+    atlas_height: -1
+    sources:
+      - type: fnt
+        path: source/insignia15LTaa.fnt
+      - type: ttf
+        path: source/LXGWNeoXiHeiPlus.ttf
+        size: 15
+        color: [255, 255, 255]
+        yoffset_adjust: -1
+        supersample: 8
+        hinting: light
+        bold: 0.5
+    chars:
+      - { file: charset/chars.txt }
+
+  - name: insignia21LTaa
+    dir: lxgw
+    atlas_width: 2048
+    atlas_height: -1
+    sources:
+      - type: fnt
+        path: source/insignia21LTaa.fnt
+      - type: ttf
+        path: source/LXGWNeoXiHeiPlus.ttf
+        size: 21
+        color: [255, 255, 255]
+        yoffset_adjust: -1
+        supersample: 4
+        hinting: light
+        bold: 0.5
+    chars:
+      - { file: charset/chars.txt }
+
+  - name: insignia25LTaa
+    dir: lxgw
+    atlas_width: 2048
+    atlas_height: -1
+    sources:
+      - type: fnt
+        path: source/insignia25LTaa.fnt
+      - type: ttf
+        path: source/LXGWNeoXiHeiPlus.ttf
+        size: 25
+        color: [255, 255, 255]
+        yoffset_adjust: -1
+        supersample: 4
+        hinting: light
+        bold: 0.5
+    chars:
+      - { file: charset/chars.txt }
