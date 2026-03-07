@@ -1,0 +1,20 @@
+# 虚拟环境
+.venv/
+
+# 输出
+output/
+
+# 输入字体（二进制资源不入库）
+source/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# 编辑器
+.vscode/
+.idea/
+*.swp
