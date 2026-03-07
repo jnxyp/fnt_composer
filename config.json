@@ -1,0 +1,37 @@
+{
+  "defaults": {
+    "atlas_width": 512,
+    "atlas_height": 512,
+    "padding": 2,
+    "on_missing": "skip"
+  },
+
+  "outputs": [
+    {
+      "name": "insignia15_cn",
+      "dir": "output",
+      "atlas_width": 512,
+      "atlas_height": 512,
+      "sources": [
+        {
+          "type": "fnt",
+          "path": "source/insignia15LTaa.fnt"
+        },
+        {
+          "type": "ttf",
+          "path": "source/方正兰亭黑.ttf",
+          "size": 15,
+          "color": [255, 255, 255]
+        }
+      ],
+      "chars": [
+        { "range": [32, 126] },
+        { "range": [160, 255] },
+        "ŁłŒœŠšŸŽžƒˆˇ˘˙˚˛˜˝μ",
+        "‐–—''‚""„†‡•…‰‹›⁄€™−∕∙",
+        "，。！？、：；""''…—～·《》【】（）",
+        { "range": [19968, 40959] }
+      ]
+    }
+  ]
+}
