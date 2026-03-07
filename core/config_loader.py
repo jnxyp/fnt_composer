@@ -29,7 +29,7 @@ class OutputConfig:
     atlas_height: int = 512
     padding: int = 2
     on_missing: str = "skip"
-    overrides: dict = None  # dict[int, dict]，key 为 char_id
+    overrides: dict | None = None  # dict[int, dict]，key 为 char_id
 
 
 @dataclass
@@ -84,7 +84,9 @@ def _parse_overrides(raw: dict) -> dict:
     return result
 
 
-def _parse_sources(raw_sources: list, base_dir: str, defaults: dict = {}) -> list[SourceConfig]:
+def _parse_sources(raw_sources: list, base_dir: str, defaults: dict | None = None) -> list[SourceConfig]:
+    if defaults is None:
+        defaults = {}
     result = []
     for s in raw_sources:
         color = tuple(s["color"]) if "color" in s else (255, 255, 255)

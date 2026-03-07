@@ -13,7 +13,7 @@ def _next_pow2(n: int) -> int:
 
 def pack(
     fnt_glyphs: dict[int, Glyph],
-    fnt_pages: list[Image.Image],
+    fnt_pages: list[Image.Image | None],
     ttf_glyphs: dict[int, Glyph],
     atlas_width: int,
     atlas_height: int,
@@ -32,6 +32,7 @@ def pack(
 
     # ── 阶段1：fnt pages 整张复制 ────────────────────────────────────────
     for page_idx, src_img in enumerate(fnt_pages):
+        assert src_img is not None, f"fnt page {page_idx} is None"
         if src_img.width > atlas_width:
             raise ValueError(
                 f"fnt page {page_idx} width {src_img.width} exceeds atlas width {atlas_width}"
@@ -73,7 +74,8 @@ def pack(
         shelf_y = 0
         shelf_h = 0
     else:
-        last_fnt_height = fnt_pages[-1].height if fnt_pages else 0
+        last_page = fnt_pages[-1] if fnt_pages else None
+        last_fnt_height = last_page.height if last_page is not None else 0
         shelf_y = last_fnt_height
         shelf_x = 0
         shelf_h = 0
@@ -120,6 +122,7 @@ def pack(
                 output_pages[cur_page] = expanded
 
         canvas = output_pages[cur_page]
+        assert g.src_image is not None
         canvas.paste(g.src_image, (shelf_x + padding, shelf_y + padding), g.src_image)
 
         g.dst_page = cur_page

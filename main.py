@@ -18,16 +18,12 @@ def run(config_path: str = "config.json"):
         print(f"\n=== {label} ===")
 
         # 1. 按来源提取字形
-        fnt_glyphs_list = []   # list of dict[int, Glyph]，来自 fnt sources
-        fnt_pages_combined = []
         all_fnt_glyphs: dict = {}
         all_fnt_pages: list = []
         all_fnt_info: dict = {}
         all_fnt_kernings: list = []
 
         ttf_glyphs_all: dict = {}
-
-        fnt_char_ids: set[int] = set()
 
         for src in out.sources:
             if src.type == "fnt":

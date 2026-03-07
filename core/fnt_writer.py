@@ -23,7 +23,7 @@ def write(
     page_filenames = []
     for i, img in enumerate(pages):
         filename = f"{name}_{i}.png"
-        img.save(os.path.join(out_dir, filename))
+        img.save(os.path.join(out_dir, filename), compress_level=9, optimize=True)
         page_filenames.append(filename)
 
     # 写 .fnt

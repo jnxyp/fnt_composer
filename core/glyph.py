@@ -1,4 +1,4 @@
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from PIL import Image
 
 
@@ -22,8 +22,8 @@ class Glyph:
     dst_x: int = 0
     dst_y: int = 0
 
-    _width_override: int = None
-    _height_override: int = None
+    _width_override: int | None = None
+    _height_override: int | None = None
 
     @property
     def width(self) -> int:

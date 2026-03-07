@@ -12,7 +12,7 @@ def _parse_fields(line: str) -> dict[str, str]:
     return result
 
 
-def parse(fnt_path: str) -> tuple[dict[int, Glyph], list[Image.Image], dict, list[tuple]]:
+def parse(fnt_path: str) -> tuple[dict[int, Glyph], list[Image.Image | None], dict, list[tuple]]:
     """
     解析 .fnt 文件。
 
@@ -23,7 +23,7 @@ def parse(fnt_path: str) -> tuple[dict[int, Glyph], list[Image.Image], dict, lis
         kernings : list[(first, second, amount)]
     """
     fnt_dir = os.path.dirname(os.path.abspath(fnt_path))
-    pages: list[Image.Image] = []
+    pages: list[Image.Image | None] = []
     glyphs: dict[int, Glyph] = {}
     kernings: list[tuple] = []
     info: dict = {}
