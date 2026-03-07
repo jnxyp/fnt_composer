@@ -15,6 +15,7 @@ class SourceConfig:
     supersample: int = 1        # 超采样倍数，1=不超采样，2/4=2x/4x
     hinting: str = "normal"     # "normal" | "light" | "none"
     bold: float = 0             # alpha 膨胀加粗（目标尺寸像素数，0=不加粗）
+    starsector_xadvance_compat: bool = False  # xoffset>0 时 xadvance -= xoffset（兼容 Starsector 的推进宽度计算方式）
 
 
 @dataclass
@@ -47,7 +48,7 @@ def load(config_path: str) -> RunConfig:
     outputs = []
 
     for out in raw["outputs"]:
-        sources = _parse_sources(out["sources"], base_dir)
+        sources = _parse_sources(out["sources"], base_dir, defaults)
         _validate_source_order(sources, out["name"])
 
         char_ids = _expand_chars(out.get("chars", []), base_dir)
@@ -83,7 +84,7 @@ def _parse_overrides(raw: dict) -> dict:
     return result
 
 
-def _parse_sources(raw_sources: list, base_dir: str) -> list[SourceConfig]:
+def _parse_sources(raw_sources: list, base_dir: str, defaults: dict = {}) -> list[SourceConfig]:
     result = []
     for s in raw_sources:
         color = tuple(s["color"]) if "color" in s else (255, 255, 255)
@@ -99,6 +100,7 @@ def _parse_sources(raw_sources: list, base_dir: str) -> list[SourceConfig]:
             supersample=s.get("supersample", 1),
             hinting=s.get("hinting", "normal"),
             bold=s.get("bold", 0),
+            starsector_xadvance_compat=s.get("starsector_xadvance_compat", defaults.get("starsector_xadvance_compat", False)),
         ))
     return result
 

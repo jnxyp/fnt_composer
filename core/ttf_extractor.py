@@ -13,6 +13,7 @@ def extract(
     supersample: int = 1,
     hinting: str = "normal",
     bold: float = 0,
+    starsector_xadvance_compat: bool = False,
 ) -> dict[int, Glyph]:
     """
     从 TTF 文件渲染指定字符集，返回 dict[char_id -> Glyph]。
@@ -105,6 +106,9 @@ def extract(
             else:
                 img = Image.new("RGBA", (1, 1), (0, 0, 0, 0))
                 yoffset = 0
+
+        if starsector_xadvance_compat and xoffset > 0:
+            xadvance = xadvance - xoffset
 
         glyphs[char_id] = Glyph(
             char_id=char_id,

@@ -58,6 +58,7 @@ def run(config_path: str = "config.json"):
                     supersample=src.supersample,
                     hinting=src.hinting,
                     bold=src.bold,
+                    starsector_xadvance_compat=src.starsector_xadvance_compat,
                 )
                 # 如果 fnt 没有提供 info，用 ttf 配置补充
                 if not all_fnt_info:
