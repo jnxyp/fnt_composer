@@ -70,56 +70,65 @@ outputs:
     chars:
       - { file: charset/chars.txt }
 
-  - name: insignia15LTaa
-    dir: lxgw
-    atlas_width: -1
-    atlas_height: -1
-    sources:
-      - type: fnt
-        path: source/insignia15LTaa.fnt
-      - type: ttf
-        path: source/LXGWNeoXiHeiPlus.ttf
-        size: 15
-        color: [255, 255, 255]
-        y_adjust: 0
-        supersample: 8
-        hinting: light
-        bold: 0.2
-    chars:
-      - { file: charset/chars.txt }
+  # - name: insignia15LTaa
+  #   dir: lxgw
+  #   atlas_width: -1
+  #   atlas_height: -1
+  #   sources:
+  #     - type: fnt
+  #       path: source/insignia15LTaa.fnt
+  #       line_height_adjust: +1
+  #     - type: ttf
+  #       path: source/LXGWNeoXiHeiPlus.ttf
+  #       size: 15
+  #       color: [255, 255, 255]
+  #       y_adjust: 0
+  #       xadvance_adjust: 0
+  #       line_height_adjust: +1
+  #       supersample: 8
+  #       hinting: light
+  #       bold: 0.2
+  #   chars:
+  #     - { file: charset/chars.txt }
 
-  - name: insignia21LTaa
-    dir: lxgw
-    atlas_width: -1
-    atlas_height: -1
-    sources:
-      - type: fnt
-        path: source/insignia21LTaa.fnt
-      - type: ttf
-        path: source/LXGWNeoXiHeiPlus.ttf
-        size: 21
-        color: [255, 255, 255]
-        y_adjust: -1
-        supersample: 4
-        hinting: light
-        bold: 0.3
-    chars:
-      - { file: charset/chars.txt }
+  # - name: insignia21LTaa
+  #   dir: lxgw
+  #   atlas_width: -1
+  #   atlas_height: -1
+  #   sources:
+  #     - type: fnt
+  #       path: source/insignia21LTaa.fnt
+  #       line_height_adjust: +2
+  #     - type: ttf
+  #       path: source/LXGWNeoXiHeiPlus.ttf
+  #       size: 21
+  #       color: [255, 255, 255]
+  #       y_adjust: 0
+  #       xadvance_adjust: 0
+  #       line_height_adjust: +2
+  #       supersample: 4
+  #       hinting: light
+  #       bold: 0.25
+  #   chars:
+  #     - { file: charset/chars.txt }
 
-  - name: insignia25LTaa
-    dir: lxgw
-    atlas_width: -1
-    atlas_height: -1
-    sources:
-      - type: fnt
-        path: source/insignia25LTaa.fnt
-      - type: ttf
-        path: source/LXGWNeoXiHeiPlus.ttf
-        size: 25
-        color: [255, 255, 255]
-        y_adjust: -1
-        supersample: 4
-        hinting: light
-        bold: 0.35
-    chars:
-      - { file: charset/chars.txt }
+  # - name: insignia25LTaa
+  #   dir: lxgw
+  #   atlas_width: -1
+  #   atlas_height: -1
+  #   sources:
+  #     - type: fnt
+  #       path: source/insignia25LTaa.fnt
+  #       line_height_adjust: +3
+  #     - type: ttf
+  #       path: source/LXGWNeoXiHeiPlus.ttf
+  #       size: 25
+  #       color: [255, 255, 255]
+  #       y_adjust: 0
+  #       xadvance_adjust: 0
+  #       line_height_adjust: +3
+  #       supersample: 4
+  #       hinting: light
+  #       bold: 0.35
+  #   chars:
+  #     - { file: charset/chars.txt }
