@@ -11,6 +11,25 @@ def _next_pow2(n: int) -> int:
     return p
 
 
+def _simulate_shelf(glyphs: list[Glyph], width: int, padding: int) -> int:
+    """模拟 shelf 装箱，返回所需总高度（未对齐到 2^n）。"""
+    shelf_x = 0
+    shelf_y = 0
+    shelf_h = 0
+    for g in glyphs:
+        gw = g.width + padding * 2
+        gh = g.height + padding * 2
+        if gw > width:
+            continue
+        if shelf_x + gw > width:
+            shelf_y += shelf_h
+            shelf_x = 0
+            shelf_h = 0
+        shelf_x += gw
+        shelf_h = max(shelf_h, gh)
+    return shelf_y + shelf_h
+
+
 def pack(
     fnt_glyphs: dict[int, Glyph],
     fnt_pages: list[Image.Image | None],
@@ -28,6 +47,24 @@ def pack(
     返回输出图集列表。
     """
     unlimited_height = atlas_height == -1
+
+    # ── auto width：atlas_width=-1 时枚举 2^n 宽度，选面积最小的 ──────────
+    if atlas_width == -1:
+        all_for_size = list(fnt_glyphs.values()) + list(ttf_glyphs.values())
+        sorted_for_size = sorted(all_for_size, key=lambda g: g.height, reverse=True)
+        if sorted_for_size:
+            min_gw = max(g.width + padding * 2 for g in sorted_for_size)
+            min_w = max(256, _next_pow2(min_gw))
+            best_w, best_area = min_w, float("inf")
+            for exp in range(min_w.bit_length() - 1, 13):  # 最大 2^12=4096
+                w = 1 << exp
+                h = _next_pow2(_simulate_shelf(sorted_for_size, w, padding))
+                area = w * h
+                if area < best_area:
+                    best_area = area
+                    best_w = w
+            atlas_width = best_w
+            print(f"  auto atlas_width → {atlas_width}")
 
     # ── fnt 字形：从原始 page 裁剪出 src_image（像素原样保留，R=G=B=A）──
     for g in fnt_glyphs.values():
