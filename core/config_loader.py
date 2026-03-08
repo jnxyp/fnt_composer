@@ -11,7 +11,9 @@ class SourceConfig:
     color: tuple = (255, 255, 255)
     stroke_width: int = 0
     stroke_color: tuple = (0, 0, 0)
-    yoffset_adjust: int = 0
+    y_adjust: int = 0              # 同步调整字形 yoffset 和 info base（正=下移，负=上移）
+    xadvance_adjust: int = 0       # 对本来源所有字形 xadvance 的增量
+    line_height_adjust: int = 0    # 对 lineHeight 的增量（同步调整 base 和 yoffset 各半）
     supersample: int = 1        # 超采样倍数，1=不超采样，2/4=2x/4x
     hinting: str = "normal"     # "normal" | "light" | "none"
     bold: float = 0             # alpha 膨胀加粗（目标尺寸像素数，0=不加粗）
@@ -100,7 +102,9 @@ def _parse_sources(raw_sources: list, base_dir: str, defaults: dict | None = Non
             color=color,
             stroke_width=s.get("stroke_width", 0),
             stroke_color=stroke_color,
-            yoffset_adjust=s.get("yoffset_adjust", 0),
+            y_adjust=s.get("y_adjust", 0),
+            xadvance_adjust=s.get("xadvance_adjust", 0),
+            line_height_adjust=s.get("line_height_adjust", 0),
             supersample=s.get("supersample", 1),
             hinting=s.get("hinting", "normal"),
             bold=s.get("bold", 0),

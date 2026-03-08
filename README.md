@@ -103,10 +103,11 @@ defaults:
 outputs:
   - name: my_font               # [必填] 输出文件名（不含扩展名）
     dir: subfolder              # 输出子目录，结果写入 output/<dir>/（默认直接写 output/）
-    atlas_width: 2048           # 覆盖 defaults.atlas_width
-    atlas_height: -1            # 覆盖 defaults.atlas_height
+    atlas_width: 2048           # 覆盖 defaults.atlas_width（-1 自动选最优宽度）
+    atlas_height: -1            # 覆盖 defaults.atlas_height（-1 高度自动扩展）
     padding: 2                  # 覆盖 defaults.padding
     on_missing: skip            # 覆盖 defaults.on_missing
+    face: "MyFont21"            # 覆盖 .fnt info 行的 face 名称（默认取自 fnt 来源或 ttf 文件名）
     chars:                      # [必填] 字符集，可混合以下三种写法
       - "ABC123"                      # 直接内联字符串
       - { file: charset/chars.txt }   # 文件（UTF-8，每行每字，# 开头行为注释）
@@ -125,8 +126,10 @@ outputs:
 
 ```yaml
 - type: fnt
-  path: source/font.fnt       # [必填] .fnt 文件路径（相对项目根目录）
-  yoffset_adjust: 0           # 整体 yoffset 调整量（正数下移，负数上移）
+  path: source/font.fnt         # [必填] .fnt 文件路径（相对项目根目录）
+  y_adjust: 0                   # 同步调整字形 yoffset 和 info base（正=下移，负=上移）
+  xadvance_adjust: 0            # 对本来源所有字形 xadvance 的增量（正=加宽字间距）
+  line_height_adjust: 0         # 对 lineHeight 的增量，同步调整 base 和字形 yoffset 各半（正=加大行间距）
 ```
 
 ---
@@ -137,17 +140,25 @@ outputs:
 
 ```yaml
 - type: ttf
-  path: source/font.ttf       # [必填] TTF 文件路径
-  size: 16                    # [必填] 渲染字号（px）
-  color: [255, 255, 255]      # 字形颜色 RGB（默认白色）
-  stroke_width: 0             # 描边宽度（px，0=不描边）
-  stroke_color: [0, 0, 0]     # 描边颜色 RGB
-  yoffset_adjust: 0           # 整体 yoffset 调整量
-  supersample: 1              # 超采样倍数（1/2/4/8），越大质量越高但越慢
-  hinting: normal             # hinting 模式：normal | light（推荐）| none
-  bold: 0                     # alpha 膨胀加粗（目标尺寸像素数，0=不加粗，支持小数）
+  path: source/font.ttf         # [必填] TTF 文件路径
+  size: 16                      # [必填] 渲染字号（px）
+  color: [255, 255, 255]        # 字形颜色 RGB（默认白色）
+  stroke_width: 0               # 描边宽度（px，0=不描边）
+  stroke_color: [0, 0, 0]       # 描边颜色 RGB
+  supersample: 1                # 超采样倍数（1/2/4/8），越大质量越高但越慢
+  hinting: normal               # hinting 模式：normal | light（推荐）| none
+  bold: 0                       # alpha 膨胀加粗（目标尺寸像素数，0=不加粗，支持小数）
   starsector_xadvance_compat: false  # xoffset>0 时 xadvance -= xoffset（兼容 Starsector 推进宽度计算）
+  y_adjust: 0                   # 同步调整字形 yoffset 和 info base（正=下移，负=上移）
+  xadvance_adjust: 0            # 对本来源所有字形 xadvance 的增量（正=加宽字间距）
+  line_height_adjust: 0         # 对 lineHeight 的增量，同步调整 base 和字形 yoffset 各半（正=加大行间距）
 ```
+
+#### y_adjust / line_height_adjust 说明
+
+- **`y_adjust`**：同步将所有字形的 `yoffset` 和 info 的 `base` 加上指定值，保持视觉基线与声明基线一致。
+- **`line_height_adjust`**：增加 `lineHeight`，同时将 `base` 和字形 `yoffset` 各加一半增量（向下取整），使多出的行高均匀分布在行的上下。
+- 两者叠加时，`y_adjust` 先于 `line_height_adjust` 的半值补偿生效。
 
 #### starsector_xadvance_compat 说明
 
@@ -160,8 +171,8 @@ Starsector 等游戏引擎在计算字符位置时，实际推进量为 `xadvanc
 ```yaml
 defaults:
   atlas_width: 512
-  atlas_height: 512
-  padding: 2
+  atlas_height: -1
+  padding: 1
   on_missing: skip
   clean_output: true
   starsector_xadvance_compat: true
@@ -173,7 +184,8 @@ outputs:
   # 用 TTF 补全 fnt 缺失的汉字，高质量超采样
   - name: my_font_21
     dir: output_set
-    atlas_width: 2048
+    face: "my_font_21+MyFont21_bold0.3"
+    atlas_width: -1
     atlas_height: -1
     sources:
       - type: fnt
@@ -182,7 +194,9 @@ outputs:
         path: source/MyFont.ttf
         size: 21
         color: [255, 255, 255]
-        yoffset_adjust: -1
+        y_adjust: -1
+        xadvance_adjust: 1
+        line_height_adjust: 4
         supersample: 4
         hinting: light
         bold: 0.3
@@ -191,7 +205,7 @@ outputs:
 
   # 纯 TTF 渲染，带描边
   - name: my_font_outlined
-    atlas_width: 1024
+    atlas_width: -1
     atlas_height: -1
     sources:
       - type: ttf
@@ -218,8 +232,8 @@ outputs:
   └─ 对每个 output：
        1. 展开 chars → char_id 集合
        2. 按 sources 顺序：
-            fnt 来源 → 解析 .fnt，从原始纹理裁剪各字形像素
-            ttf 来源 → 渲染缺失字符
+            fnt 来源 → 解析 .fnt，裁剪字形，应用 y_adjust / xadvance_adjust / line_height_adjust
+            ttf 来源 → 渲染缺失字符，应用 y_adjust / xadvance_adjust / line_height_adjust
        3. 合并字形（fnt 优先，先列出的来源优先）
        4. 装箱：所有字形按高度降序统一用 Shelf 算法重新排布
        5. 应用 overrides

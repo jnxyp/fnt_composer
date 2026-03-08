@@ -4,6 +4,32 @@ import shutil
 from core import config_loader, fnt_parser, ttf_extractor, glyph_merger, atlas_packer, fnt_writer
 
 
+def _auto_face(sources) -> str:
+    parts = []
+    for src in sources:
+        stem = os.path.splitext(os.path.basename(src.path))[0]
+        if src.type == "fnt":
+            params = []
+            if src.line_height_adjust: params.append(f"h{src.line_height_adjust:+d}")
+            if src.xadvance_adjust:    params.append(f"x{src.xadvance_adjust:+d}")
+            if src.y_adjust:           params.append(f"y{src.y_adjust:+d}")
+            part = f"{stem}.fnt"
+            if params:
+                part += f"({','.join(params)})"
+        elif src.type == "ttf":
+            params = []
+            if src.line_height_adjust: params.append(f"h{src.line_height_adjust:+d}")
+            if src.xadvance_adjust:    params.append(f"x{src.xadvance_adjust:+d}")
+            if src.y_adjust:           params.append(f"y{src.y_adjust:+d}")
+            if src.bold:               params.append(f"b{src.bold:g}")
+            params.append(f"hint={src.hinting}")
+            part = f"{stem}@{src.size}x{src.supersample}({','.join(params)})"
+        else:
+            continue
+        parts.append(part)
+    return "+".join(parts)
+
+
 def run(config_path: str = "config.json"):
     run_cfg = config_loader.load(config_path)
 
@@ -34,12 +60,24 @@ def run(config_path: str = "config.json"):
                 page_offset = len(all_fnt_pages)
                 for g in glyphs.values():
                     g.src_page += page_offset
-                    g.yoffset += src.yoffset_adjust
+                    g.yoffset += src.y_adjust
                 all_fnt_pages.extend(pages)
                 all_fnt_glyphs.update(glyphs)
                 all_fnt_kernings.extend(kernings)
                 if not all_fnt_info:
                     all_fnt_info = info
+                if src.y_adjust:
+                    all_fnt_info["base"] = all_fnt_info.get("base", 0) + src.y_adjust
+                if src.xadvance_adjust:
+                    for g in glyphs.values():
+                        g.xadvance += src.xadvance_adjust
+                if src.line_height_adjust:
+                    all_fnt_info["lineHeight"] = all_fnt_info.get("lineHeight", 0) + src.line_height_adjust
+                    half = src.line_height_adjust // 2
+                    if half:
+                        all_fnt_info["base"] = all_fnt_info.get("base", 0) + half
+                        for g in glyphs.values():
+                            g.yoffset += half
 
             elif src.type == "ttf":
                 # 只渲染 fnt 来源没有覆盖到的字符
@@ -69,9 +107,20 @@ def run(config_path: str = "config.json"):
                         "base": src.size,
                         "alphaChnl": 1, "redChnl": 0, "greenChnl": 0, "blueChnl": 0,
                     }
-                if src.yoffset_adjust:
+                if src.y_adjust:
+                    all_fnt_info["base"] = all_fnt_info.get("base", 0) + src.y_adjust
                     for g in glyphs.values():
-                        g.yoffset += src.yoffset_adjust
+                        g.yoffset += src.y_adjust
+                if src.xadvance_adjust:
+                    for g in glyphs.values():
+                        g.xadvance += src.xadvance_adjust
+                if src.line_height_adjust:
+                    all_fnt_info["lineHeight"] = all_fnt_info.get("lineHeight", 0) + src.line_height_adjust
+                    half = src.line_height_adjust // 2
+                    if half:
+                        all_fnt_info["base"] = all_fnt_info.get("base", 0) + half
+                        for g in glyphs.values():
+                            g.yoffset += half
                 ttf_glyphs_all.update(glyphs)
 
         # 2. 合并（fnt 优先）
@@ -112,9 +161,9 @@ def run(config_path: str = "config.json"):
             if f in char_set and s in char_set
         ]
 
-        # 5. 输出
-        if out.face is not None:
-            all_fnt_info["face"] = out.face
+        # 6. 输出
+        all_fnt_info["face"] = out.face if out.face is not None else _auto_face(out.sources)
+        print(f"  face: {all_fnt_info['face']}")
         fnt_writer.write(out.out_dir, out.name, merged, pages, all_fnt_info, filtered_kernings)
 
 
