@@ -21,7 +21,7 @@ def _auto_face(sources) -> str:
             if src.xadvance_adjust:    params.append(f"x{src.xadvance_adjust:+d}")
             if src.y_adjust:           params.append(f"y{src.y_adjust:+d}")
             if src.bold:               params.append(f"b{src.bold:g}")
-            params.append(f"hint={src.hinting}")
+            params.append(f"hint:{src.hinting}")
             part = f"{stem}@{src.size}x{src.supersample}({','.join(params)})"
         else:
             continue
