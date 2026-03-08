@@ -3,7 +3,6 @@ import os
 import shutil
 from core import config_loader, fnt_parser, ttf_extractor, glyph_merger, atlas_packer, fnt_writer
 
-
 def _auto_face(sources) -> str:
     parts = []
     for src in sources:

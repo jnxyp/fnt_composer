@@ -107,7 +107,7 @@ outputs:
     atlas_height: -1            # 覆盖 defaults.atlas_height（-1 高度自动扩展）
     padding: 2                  # 覆盖 defaults.padding
     on_missing: skip            # 覆盖 defaults.on_missing
-    face: "MyFont21"            # 覆盖 .fnt info 行的 face 名称（默认取自 fnt 来源或 ttf 文件名）
+    face: "MyFont21"            # 覆盖 .fnt info 行的 face 名称（省略时自动生成，见下方说明）
     chars:                      # [必填] 字符集，可混合以下三种写法
       - "ABC123"                      # 直接内联字符串
       - { file: charset/chars.txt }   # 文件（UTF-8，每行每字，# 开头行为注释）
@@ -117,6 +117,18 @@ outputs:
     sources:                    # [必填] 字形来源列表，fnt 必须在 ttf 之前
       - ...
 ```
+
+#### face 自动生成规则
+
+省略 `face` 时，工具按以下格式自动拼接各来源名称，并在运行时打印：
+
+- fnt 来源：`{文件名}.fnt` 或 `{文件名}.fnt({参数})`
+- ttf 来源：`{文件名}@{size}x{supersample}({参数})`
+- 多个来源之间用 `+` 连接
+
+参数列表（仅非零/非默认时出现）：`h±N`（line_height_adjust）、`x±N`（xadvance_adjust）、`y±N`（y_adjust）、`b{N}`（bold）、`hint={mode}`（ttf 必显示）。
+
+示例：`insignia21LTaa.fnt(h+2)+方正兰亭中粗黑@20x4(h+2,x+1,hint=light)`
 
 ---
 
