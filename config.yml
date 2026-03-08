@@ -12,7 +12,8 @@ defaults:
 outputs:
   - name: insignia15LTaa
     dir: lantinghei
-    atlas_width: 2048
+    face: "insignia15LTaa+方正兰亭中粗黑15"
+    atlas_width: -1
     atlas_height: -1
     sources:
       - type: fnt
@@ -29,7 +30,8 @@ outputs:
 
   - name: insignia21LTaa
     dir: lantinghei
-    atlas_width: 2048
+    face: "insignia21LTaa+方正兰亭中粗黑21"
+    atlas_width: -1
     atlas_height: -1
     sources:
       - type: fnt
@@ -46,7 +48,8 @@ outputs:
 
   - name: insignia25LTaa
     dir: lantinghei
-    atlas_width: 2048
+    face: "insignia25LTaa+方正兰亭中粗黑25"
+    atlas_width: -1
     atlas_height: -1
     sources:
       - type: fnt
@@ -63,7 +66,8 @@ outputs:
 
   - name: insignia15LTaa
     dir: lxgw
-    atlas_width: 2048
+    face: "insignia15LTaa+LXGWNeoXiHeiPlus15_bold0.2"
+    atlas_width: -1
     atlas_height: -1
     sources:
       - type: fnt
@@ -81,7 +85,8 @@ outputs:
 
   - name: insignia21LTaa
     dir: lxgw
-    atlas_width: 2048
+    face: "insignia21LTaa+LXGWNeoXiHeiPlus21_bold0.3"
+    atlas_width: -1
     atlas_height: -1
     sources:
       - type: fnt
@@ -99,7 +104,8 @@ outputs:
 
   - name: insignia25LTaa
     dir: lxgw
-    atlas_width: 2048
+    face: "insignia25LTaa+LXGWNeoXiHeiPlus25_bold0.35"
+    atlas_width: -1
     atlas_height: -1
     sources:
       - type: fnt

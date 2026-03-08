@@ -113,6 +113,8 @@ def run(config_path: str = "config.json"):
         ]
 
         # 5. 输出
+        if out.face is not None:
+            all_fnt_info["face"] = out.face
         fnt_writer.write(out.out_dir, out.name, merged, pages, all_fnt_info, filtered_kernings)
 
 

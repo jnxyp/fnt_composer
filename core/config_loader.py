@@ -30,6 +30,7 @@ class OutputConfig:
     padding: int = 2
     on_missing: str = "skip"
     overrides: dict | None = None  # dict[int, dict]，key 为 char_id
+    face: str | None = None        # 覆盖 fnt info 行的 face 名称
 
 
 @dataclass
@@ -70,6 +71,7 @@ def load(config_path: str) -> RunConfig:
             padding=out.get("padding", defaults.get("padding", 2)),
             on_missing=out.get("on_missing", defaults.get("on_missing", "skip")),
             overrides=_parse_overrides(merged_overrides),
+            face=out.get("face", defaults.get("face")),
         ))
 
     return RunConfig(clean_output=clean_output, outputs=outputs)
