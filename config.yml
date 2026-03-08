@@ -36,15 +36,15 @@ outputs:
     atlas_height: -1
     sources:
       - type: fnt
-        path: source/insignia21LTaa.fnt
-        line_height_adjust: +2
+        path: source/insignia17LTaa.fnt
+        line_height_adjust: 0
       - type: ttf
         path: "source/方正兰亭中粗黑.ttf"
-        size: 20
+        size: 16
         color: [255, 255, 255]
         y_adjust: 0
         xadvance_adjust: +1
-        line_height_adjust: +2
+        line_height_adjust: 0
         supersample: 4
         hinting: light
     chars:
