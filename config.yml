@@ -11,7 +11,7 @@ defaults:
 
 outputs:
   - name: insignia15LTaa
-    dir: lantinghei
+    # dir: lantinghei
     atlas_width: -1
     atlas_height: -1
     sources:
@@ -31,7 +31,7 @@ outputs:
       - { file: charset/chars.txt }
 
   - name: insignia21LTaa
-    dir: lantinghei
+    # dir: lantinghei
     atlas_width: -1
     atlas_height: -1
     sources:
@@ -51,7 +51,7 @@ outputs:
       - { file: charset/chars.txt }
 
   - name: insignia25LTaa
-    dir: lantinghei
+    # dir: lantinghei
     atlas_width: -1
     atlas_height: -1
     sources:
@@ -132,3 +132,91 @@ outputs:
   #       bold: 0.35
   #   chars:
   #     - { file: charset/chars.txt }
+
+  - name: orbitron12condensed
+    # dir: ruizi
+    atlas_width: -1
+    atlas_height: -1
+    sources:
+      - type: fnt
+        path: source/orbitron12condensed.fnt
+      - type: ttf
+        path: source/锐字逼格青春粗黑体简2.0.ttf
+        size: 16
+        color: [255, 255, 255]
+        y_adjust: -1
+        supersample: 8
+        hinting: light
+        bold: 0.1
+    chars:
+      - { file: charset/chars.txt }
+
+  - name: orbitron20aa
+    # dir: ruizi
+    atlas_width: -1
+    atlas_height: -1
+    sources:
+      - type: fnt
+        path: source/orbitron20aa.fnt
+      - type: ttf
+        path: source/锐字逼格青春粗黑体简2.0.ttf
+        size: 18
+        color: [255, 255, 255]
+        y_adjust: 1
+        supersample: 4
+        hinting: light
+    chars:
+      - { file: charset/chars.txt }
+
+  - name: orbitron20aabold
+    # dir: ruizi
+    atlas_width: -1
+    atlas_height: -1
+    sources:
+      - type: fnt
+        path: source/orbitron20aabold.fnt
+      - type: ttf
+        path: source/锐字逼格青春粗黑体简2.0.ttf
+        size: 18
+        color: [255, 255, 255]
+        y_adjust: 1
+        supersample: 4
+        hinting: light
+        bold: 0.2
+    chars:
+      - { file: charset/chars.txt }
+
+  - name: orbitron24aa
+    # dir: ruizi
+    atlas_width: -1
+    atlas_height: -1
+    sources:
+      - type: fnt
+        path: source/orbitron24aa.fnt
+      - type: ttf
+        path: source/锐字逼格青春粗黑体简2.0.ttf
+        size: 20
+        color: [255, 255, 255]
+        y_adjust: 1
+        supersample: 4
+        hinting: light
+    chars:
+      - { file: charset/chars.txt }
+
+  - name: orbitron24aabold
+    # dir: ruizi
+    atlas_width: -1
+    atlas_height: -1
+    sources:
+      - type: fnt
+        path: source/orbitron24aabold.fnt
+      - type: ttf
+        path: source/锐字逼格青春粗黑体简2.0.ttf
+        size: 20
+        color: [255, 255, 255]
+        y_adjust: 1
+        supersample: 4
+        hinting: light
+        bold: 0.2
+    chars:
+      - { file: charset/chars.txt }

@@ -4,8 +4,9 @@
 # 输出
 output/
 
-# 输入字体（二进制资源不入库）
-source/
+# 输入字体（字体资源文件请自行添加）
+source/*
+!source/.gitkeep
 
 # Python
 __pycache__/
