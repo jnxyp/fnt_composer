@@ -60,11 +60,11 @@ outputs:
         line_height_adjust: +3
       - type: ttf
         path: "source/方正兰亭中粗黑.ttf"
-        size: 24
+        size: 22
         color: [255, 255, 255]
         y_adjust: 0
         xadvance_adjust: +1
-        line_height_adjust: +3
+        line_height_adjust: +1
         supersample: 4
         hinting: light
     chars:
