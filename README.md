@@ -108,6 +108,7 @@ outputs:
     padding: 2                  # 覆盖 defaults.padding
     on_missing: skip            # 覆盖 defaults.on_missing
     face: "MyFont21"            # 覆盖 .fnt info 行的 face 名称（省略时自动生成，见下方说明）
+    size: 21                    # 可选：覆盖最终输出 .fnt 的 info size，不影响字形渲染
     chars:                      # [必填] 字符集，可混合以下三种写法
       - "ABC123"                      # 直接内联字符串
       - { file: charset/chars.txt }   # 文件（UTF-8，每行每字，# 开头行为注释）
@@ -129,6 +130,13 @@ outputs:
 参数列表（仅非零/非默认时出现）：`h±N`（line_height_adjust）、`x±N`（xadvance_adjust）、`y±N`（y_adjust）、`b{N}`（bold）、`hint={mode}`（ttf 必显示）。
 
 示例：`insignia21LTaa.fnt(h+2)+方正兰亭中粗黑@20x4(h+2,x+1,hint=light)`
+
+#### size override
+
+在 `output` 层级可选配置 `size`，用于直接覆盖最终输出 `.fnt` 的 `info size` 字段。
+
+- 不配置时：沿用第一个提供 info 的来源值，来自 `.fnt` 的 `size` 或纯 `ttf` 输出时的 `src.size`
+- 配置后：只修改写出的 `.fnt` 元数据 `size`，不影响字形渲染、像素高度、`yoffset` 或 `lineHeight`
 
 ---
 

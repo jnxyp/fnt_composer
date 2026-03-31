@@ -1,6 +1,6 @@
 import os
 import yaml
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 
 @dataclass
@@ -33,6 +33,7 @@ class OutputConfig:
     on_missing: str = "skip"
     overrides: dict | None = None  # dict[int, dict]，key 为 char_id
     face: str | None = None        # 覆盖 fnt info 行的 face 名称
+    size: int | None = None
 
 
 @dataclass
@@ -74,6 +75,7 @@ def load(config_path: str) -> RunConfig:
             on_missing=out.get("on_missing", defaults.get("on_missing", "skip")),
             overrides=_parse_overrides(merged_overrides),
             face=out.get("face", defaults.get("face")),
+            size=out.get("size", defaults.get("size")),
         ))
 
     return RunConfig(clean_output=clean_output, outputs=outputs)
@@ -108,7 +110,10 @@ def _parse_sources(raw_sources: list, base_dir: str, defaults: dict | None = Non
             supersample=s.get("supersample", 1),
             hinting=s.get("hinting", "normal"),
             bold=s.get("bold", 0),
-            starsector_xadvance_compat=s.get("starsector_xadvance_compat", defaults.get("starsector_xadvance_compat", False)),
+            starsector_xadvance_compat=s.get(
+                "starsector_xadvance_compat",
+                defaults.get("starsector_xadvance_compat", False),
+            ),
         ))
     return result
 

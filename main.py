@@ -162,6 +162,8 @@ def run(config_path: str = "config.json"):
 
         # 6. 输出
         all_fnt_info["face"] = out.face if out.face is not None else _auto_face(out.sources)
+        if out.size is not None:
+            all_fnt_info["size"] = out.size
         print(f"  face: {all_fnt_info['face']}")
         fnt_writer.write(out.out_dir, out.name, merged, pages, all_fnt_info, filtered_kernings)
 
