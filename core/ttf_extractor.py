@@ -1,3 +1,5 @@
+import ctypes
+import numpy as np
 import freetype
 from PIL import Image, ImageFilter
 from .glyph import Glyph
@@ -72,8 +74,10 @@ def extract(
             img = Image.new("RGBA", (1, 1), (0, 0, 0, 0))
             yoffset = 0
         else:
-            alpha = bytes(bitmap.buffer)
-            glyph_img_ss = _render_glyph(alpha, w, h, color, sw_ss, stroke_color)
+            pitch = abs(bitmap.pitch)
+            addr = ctypes.cast(bitmap._FT_Bitmap.buffer, ctypes.c_void_p).value
+            alpha = ctypes.string_at(addr, h * pitch)
+            glyph_img_ss = _render_glyph(alpha, w, h, pitch, color, sw_ss, stroke_color)
             # glyph_img_ss 尺寸：(w + 2*sw_ss, h + 2*sw_ss)
 
             if bold_ss > 0:
@@ -125,16 +129,21 @@ def _render_glyph(
     alpha: bytes,
     w: int,
     h: int,
+    pitch: int,
     color: tuple,
     stroke_width: int,
     stroke_color: tuple,
 ) -> Image.Image:
     # 基础字形层
     r, g, b = color[:3]
-    pixels = []
-    for a in alpha:
-        pixels.extend([r, g, b, a])
-    base = Image.frombytes("RGBA", (w, h), bytes(pixels))
+    raw = np.frombuffer(alpha, dtype=np.uint8).reshape(h, pitch)
+    alpha_arr = raw[:, :w] if pitch != w else raw
+    base_arr = np.empty((h, w, 4), dtype=np.uint8)
+    base_arr[..., 0] = r
+    base_arr[..., 1] = g
+    base_arr[..., 2] = b
+    base_arr[..., 3] = alpha_arr
+    base = Image.fromarray(base_arr, "RGBA")
 
     if stroke_width <= 0:
         return base
@@ -145,11 +154,12 @@ def _render_glyph(
     stroke_layer = Image.new("RGBA", (canvas_w, canvas_h), (0, 0, 0, 0))
 
     sr, sg, sb = stroke_color[:3]
-    stroke_glyph = Image.new("RGBA", (w, h), (0, 0, 0, 0))
-    for i, a in enumerate(alpha):
-        if a > 0:
-            px, py = i % w, i // w
-            stroke_glyph.putpixel((px, py), (sr, sg, sb, a))
+    stroke_arr = np.empty((h, w, 4), dtype=np.uint8)
+    stroke_arr[..., 0] = sr
+    stroke_arr[..., 1] = sg
+    stroke_arr[..., 2] = sb
+    stroke_arr[..., 3] = alpha_arr
+    stroke_glyph = Image.fromarray(stroke_arr, "RGBA")
 
     for dy in range(-sw, sw + 1):
         for dx in range(-sw, sw + 1):

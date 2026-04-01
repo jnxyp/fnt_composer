@@ -1,3 +1,4 @@
 Pillow
 freetype-py
 pyyaml
+numpy
