@@ -5,19 +5,19 @@ from dataclasses import dataclass
 
 @dataclass
 class SourceConfig:
-    type: str           # "fnt" | "ttf"
+    type: str
     path: str
     size: int = 16
     color: tuple = (255, 255, 255)
     stroke_width: int = 0
     stroke_color: tuple = (0, 0, 0)
-    y_adjust: int = 0              # 同步调整字形 yoffset 和 info base（正=下移，负=上移）
-    xadvance_adjust: int = 0       # 对本来源所有字形 xadvance 的增量
-    line_height_adjust: int = 0    # 对 lineHeight 的增量（同步调整 base 和 yoffset 各半）
-    supersample: int = 1        # 超采样倍数，1=不超采样，2/4=2x/4x
-    hinting: str = "normal"     # "normal" | "light" | "none"
-    bold: float = 0             # alpha 膨胀加粗（目标尺寸像素数，0=不加粗）
-    starsector_xadvance_compat: bool = False  # xoffset>0 时 xadvance -= xoffset（兼容 Starsector 的推进宽度计算方式）
+    y_adjust: int = 0
+    xadvance_adjust: int = 0
+    extra_line_height: int = 0
+    supersample: int = 1
+    hinting: str = "normal"
+    bold: float = 0
+    starsector_xadvance_compat: bool = False
 
 
 @dataclass
@@ -31,8 +31,8 @@ class OutputConfig:
     atlas_height: int = 512
     padding: int = 2
     on_missing: str = "skip"
-    overrides: dict | None = None  # dict[int, dict]，key 为 char_id
-    face: str | None = None        # 覆盖 fnt info 行的 face 名称
+    overrides: dict | None = None
+    face: str | None = None
     size: int | None = None
 
 
@@ -57,32 +57,31 @@ def load(config_path: str) -> RunConfig:
 
         char_ids = _expand_chars(out.get("chars", []), base_dir)
 
-        # per-output dir: output/<dir> 或 output
         sub = out.get("dir", "")
         out_dir = os.path.join(base_dir, "output", sub) if sub else os.path.join(base_dir, "output")
 
-        # 合并 defaults 和 per-output 的 overrides
         merged_overrides = {**defaults.get("overrides", {}), **out.get("overrides", {})}
-        outputs.append(OutputConfig(
-            name=out["name"],
-            sources=sources,
-            char_ids=char_ids,
-            out_dir=out_dir,
-            dir=sub,
-            atlas_width=out.get("atlas_width", defaults.get("atlas_width", 512)),
-            atlas_height=out.get("atlas_height", defaults.get("atlas_height", 512)),
-            padding=out.get("padding", defaults.get("padding", 2)),
-            on_missing=out.get("on_missing", defaults.get("on_missing", "skip")),
-            overrides=_parse_overrides(merged_overrides),
-            face=out.get("face", defaults.get("face")),
-            size=out.get("size", defaults.get("size")),
-        ))
+        outputs.append(
+            OutputConfig(
+                name=out["name"],
+                sources=sources,
+                char_ids=char_ids,
+                out_dir=out_dir,
+                dir=sub,
+                atlas_width=out.get("atlas_width", defaults.get("atlas_width", 512)),
+                atlas_height=out.get("atlas_height", defaults.get("atlas_height", 512)),
+                padding=out.get("padding", defaults.get("padding", 2)),
+                on_missing=out.get("on_missing", defaults.get("on_missing", "skip")),
+                overrides=_parse_overrides(merged_overrides),
+                face=out.get("face", defaults.get("face")),
+                size=out.get("size", defaults.get("size")),
+            )
+        )
 
     return RunConfig(clean_output=clean_output, outputs=outputs)
 
 
 def _parse_overrides(raw: dict) -> dict:
-    """将 {"字": {field: val}} 转为 {char_id: {field: val}}"""
     result = {}
     for key, fields in raw.items():
         char_id = ord(key) if len(key) == 1 else int(key)
@@ -97,24 +96,26 @@ def _parse_sources(raw_sources: list, base_dir: str, defaults: dict | None = Non
     for s in raw_sources:
         color = tuple(s["color"]) if "color" in s else (255, 255, 255)
         stroke_color = tuple(s["stroke_color"]) if "stroke_color" in s else (0, 0, 0)
-        result.append(SourceConfig(
-            type=s["type"],
-            path=os.path.join(base_dir, s["path"]),
-            size=s.get("size", 16),
-            color=color,
-            stroke_width=s.get("stroke_width", 0),
-            stroke_color=stroke_color,
-            y_adjust=s.get("y_adjust", 0),
-            xadvance_adjust=s.get("xadvance_adjust", 0),
-            line_height_adjust=s.get("line_height_adjust", 0),
-            supersample=s.get("supersample", 1),
-            hinting=s.get("hinting", "normal"),
-            bold=s.get("bold", 0),
-            starsector_xadvance_compat=s.get(
-                "starsector_xadvance_compat",
-                defaults.get("starsector_xadvance_compat", False),
-            ),
-        ))
+        result.append(
+            SourceConfig(
+                type=s["type"],
+                path=os.path.join(base_dir, s["path"]),
+                size=s.get("size", 16),
+                color=color,
+                stroke_width=s.get("stroke_width", 0),
+                stroke_color=stroke_color,
+                y_adjust=s.get("y_adjust", 0),
+                xadvance_adjust=s.get("xadvance_adjust", 0),
+                extra_line_height=s.get("extra_line_height", 0),
+                supersample=s.get("supersample", 1),
+                hinting=s.get("hinting", "normal"),
+                bold=s.get("bold", 0),
+                starsector_xadvance_compat=s.get(
+                    "starsector_xadvance_compat",
+                    defaults.get("starsector_xadvance_compat", False),
+                ),
+            )
+        )
     return result
 
 
@@ -124,9 +125,7 @@ def _validate_source_order(sources: list[SourceConfig], output_name: str):
         if s.type == "ttf":
             seen_ttf = True
         elif s.type == "fnt" and seen_ttf:
-            raise ValueError(
-                f"output '{output_name}': fnt source must come before all ttf sources"
-            )
+            raise ValueError(f"output '{output_name}': fnt source must come before all ttf sources")
 
 
 def _expand_chars(chars_list: list, base_dir: str) -> set[int]:

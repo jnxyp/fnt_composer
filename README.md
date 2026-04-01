@@ -127,7 +127,7 @@ outputs:
 - ttf 来源：`{文件名}@{size}x{supersample}({参数})`
 - 多个来源之间用 `+` 连接
 
-参数列表（仅非零/非默认时出现）：`h±N`（line_height_adjust）、`x±N`（xadvance_adjust）、`y±N`（y_adjust）、`b{N}`（bold）、`hint={mode}`（ttf 必显示）。
+参数列表（仅非零/非默认时出现）：`h±N`（extra_line_height）、`x±N`（xadvance_adjust）、`y±N`（y_adjust）、`b{N}`（bold）、`hint={mode}`（ttf 必显示）。
 
 示例：`insignia21LTaa.fnt(h+2)+方正兰亭中粗黑@20x4(h+2,x+1,hint=light)`
 
@@ -136,7 +136,7 @@ outputs:
 在 `output` 层级可选配置 `size`，用于直接覆盖最终输出 `.fnt` 的 `info size` 字段。
 
 - 不配置时：沿用第一个提供 info 的来源值，来自 `.fnt` 的 `size` 或纯 `ttf` 输出时的 `src.size`
-- 配置后：只修改写出的 `.fnt` 元数据 `size`，不影响字形渲染、像素高度、`yoffset` 或 `lineHeight`
+- 配置后：只修改写出的 `.fnt` 元数据 `size`，不影响字形渲染、像素高度、`yoffset`、`base` 或 `lineHeight`
 
 ---
 
@@ -147,9 +147,9 @@ outputs:
 ```yaml
 - type: fnt
   path: source/font.fnt         # [必填] .fnt 文件路径（相对项目根目录）
-  y_adjust: 0                   # 同步调整字形 yoffset 和 info base（正=下移，负=上移）
+  y_adjust: 0                   # 本 source 的字形 yoffset 和 source base 同步偏移（正=下移，负=上移）
   xadvance_adjust: 0            # 对本来源所有字形 xadvance 的增量（正=加宽字间距）
-  line_height_adjust: 0         # 对 lineHeight 的增量，同步调整 base 和字形 yoffset 各半（正=加大行间距）
+  extra_line_height: 0          # 本 source 的额外下边距：只增加 source lineHeight，不影响 base / yoffset
 ```
 
 ---
@@ -169,16 +169,17 @@ outputs:
   hinting: normal               # hinting 模式：normal | light（推荐）| none
   bold: 0                       # alpha 膨胀加粗（目标尺寸像素数，0=不加粗，支持小数）
   starsector_xadvance_compat: false  # xoffset>0 时 xadvance -= xoffset（兼容 Starsector 推进宽度计算）
-  y_adjust: 0                   # 同步调整字形 yoffset 和 info base（正=下移，负=上移）
+  y_adjust: 0                   # 本 source 的字形 yoffset 和 source base 同步偏移（正=下移，负=上移）
   xadvance_adjust: 0            # 对本来源所有字形 xadvance 的增量（正=加宽字间距）
-  line_height_adjust: 0         # 对 lineHeight 的增量，同步调整 base 和字形 yoffset 各半（正=加大行间距）
+  extra_line_height: 0          # 本 source 的额外下边距：只增加 source lineHeight，不影响 base / yoffset
 ```
 
-#### y_adjust / line_height_adjust 说明
+#### y_adjust / extra_line_height 说明
 
-- **`y_adjust`**：同步将所有字形的 `yoffset` 和 info 的 `base` 加上指定值，保持视觉基线与声明基线一致。
-- **`line_height_adjust`**：增加 `lineHeight`，同时将 `base` 和字形 `yoffset` 各加一半增量（向下取整），使多出的行高均匀分布在行的上下。
-- 两者叠加时，`y_adjust` 先于 `line_height_adjust` 的半值补偿生效。
+- **`y_adjust`**：只作用于当前 source。会把该 source 的所有字形 `yoffset` 整体平移，同时把该 source 的 `base` 加上相同的值。
+- **`extra_line_height`**：只作用于当前 source，语义是“额外下边距”。`fnt` 的 source lineHeight = 原始 `lineHeight + extra_line_height`；`ttf` 的 source lineHeight = `size + extra_line_height`。它不会改变该 source 的 `base` 或字形 `yoffset`。
+- 两者叠加时，某个 source 的最终 `base = 原始 base + y_adjust`；某个 source 的最终字形 `yoffset` 也只会加上 `y_adjust`。
+- 输出阶段不会把各 source 的 `lineHeight/base` 继续相加，而是分别取所有 source 的最大值：`lineHeight = max(source lineHeight)`，`base = max(source base)`。
 
 #### starsector_xadvance_compat 说明
 
@@ -216,7 +217,7 @@ outputs:
         color: [255, 255, 255]
         y_adjust: -1
         xadvance_adjust: 1
-        line_height_adjust: 4
+        extra_line_height: 4
         supersample: 4
         hinting: light
         bold: 0.3
@@ -252,8 +253,8 @@ outputs:
   └─ 对每个 output：
        1. 展开 chars → char_id 集合
        2. 按 sources 顺序：
-            fnt 来源 → 解析 .fnt，裁剪字形，应用 y_adjust / xadvance_adjust / line_height_adjust
-            ttf 来源 → 渲染缺失字符，应用 y_adjust / xadvance_adjust / line_height_adjust
+            fnt 来源 → 解析 .fnt，裁剪字形，应用 y_adjust / xadvance_adjust / extra_line_height
+            ttf 来源 → 渲染缺失字符，应用 y_adjust / xadvance_adjust / extra_line_height
        3. 合并字形（fnt 优先，先列出的来源优先）
        4. 装箱：所有字形按高度降序统一用 Shelf 算法重新排布
        5. 应用 overrides
