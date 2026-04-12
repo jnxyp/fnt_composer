@@ -111,7 +111,7 @@ outputs:
     size: 21                    # 可选：覆盖最终输出 .fnt 的 info size，不影响字形渲染
     chars:                      # [必填] 字符集，可混合以下三种写法
       - "ABC123"                      # 直接内联字符串
-      - { file: charset/chars.txt }   # 文件（UTF-8，每行每字，# 开头行为注释）
+      - { file: charset/chars.txt }   # 文件（UTF-8，每行一个字符；// 开头行为注释；非注释行超过 1 个字符会报错）
       - { range: [0x4E00, 0x9FFF] }   # Unicode 码位范围（含首尾）
     overrides:                  # 覆盖特定字符属性（合并自 defaults.overrides）
       "字": { xadvance: 10 }

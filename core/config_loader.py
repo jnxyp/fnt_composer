@@ -141,10 +141,16 @@ def _expand_chars(chars_list: list, base_dir: str) -> set[int]:
             elif "file" in item:
                 file_path = os.path.join(base_dir, item["file"])
                 with open(file_path, encoding="utf-8") as f:
-                    for line in f:
-                        line = line.rstrip("\n")
-                        if line.startswith("#"):
+                    for line_no, line in enumerate(f, start=1):
+                        line = line.rstrip("\r\n")
+                        if line == "":
                             continue
-                        for ch in line:
-                            result.add(ord(ch))
+                        if line.startswith("//"):
+                            continue
+                        if len(line) != 1:
+                            raise ValueError(
+                                f"invalid charset line in {file_path}:{line_no}: "
+                                f"non-comment lines must contain exactly one character"
+                            )
+                        result.add(ord(line))
     return result

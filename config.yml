@@ -147,7 +147,7 @@ outputs:
         path: source/锐字逼格青春粗黑体简2.0.ttf
         size: 16
         color: [255, 255, 255]
-        y_adjust: -1
+        y_adjust: 0
         supersample: 8
         hinting: light
         bold: 0.1
