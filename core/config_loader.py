@@ -18,6 +18,7 @@ class SourceConfig:
     hinting: str = "normal"
     bold: float = 0
     starsector_xadvance_compat: bool = False
+    bitmap: bool = False
 
 
 @dataclass
@@ -114,6 +115,7 @@ def _parse_sources(raw_sources: list, base_dir: str, defaults: dict | None = Non
                     "starsector_xadvance_compat",
                     defaults.get("starsector_xadvance_compat", False),
                 ),
+                bitmap=s.get("bitmap", False),
             )
         )
     return result

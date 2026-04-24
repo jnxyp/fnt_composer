@@ -26,7 +26,7 @@ def merge(
 
     if missing:
         msg = f"{len(missing)} characters not found in any source"
-        char_list = ", ".join(f"U+{c:04X} '{chr(c)}'" for c in missing)
+        char_list = ", ".join(f"U+{c:04X}" for c in missing)
         if on_missing == "error":
             raise KeyError(f"{msg}: {char_list}")
         else:

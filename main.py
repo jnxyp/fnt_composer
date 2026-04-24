@@ -98,9 +98,14 @@ def run(config_path: str = "config.json"):
                 if not needed:
                     continue
 
+                if src.bitmap:
+                    bm_base, bm_line_height = ttf_extractor.get_bitmap_metrics(src.path, src.size)
+                else:
+                    bm_base, bm_line_height = src.size, src.size
+
                 src_base, src_line_height, yoffset_delta = _apply_vertical_adjustments(
-                    src.size,
-                    src.size,
+                    bm_base,
+                    bm_line_height,
                     src.y_adjust,
                     src.extra_line_height,
                 )
@@ -118,6 +123,7 @@ def run(config_path: str = "config.json"):
                     hinting=src.hinting,
                     bold=src.bold,
                     starsector_xadvance_compat=src.starsector_xadvance_compat,
+                    bitmap=src.bitmap,
                 )
 
                 if not all_fnt_info:

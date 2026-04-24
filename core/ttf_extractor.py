@@ -5,6 +5,24 @@ from PIL import Image, ImageFilter
 from .glyph import Glyph
 
 
+def get_bitmap_metrics(ttf_path: str, size: int) -> tuple[int, int]:
+    """查询字体在指定 ppem 下的 (ascender, line_height)，用于 bitmap 模式的对齐计算。
+
+    face.size.ascender 由 OS/2 指标缩放得到，对部分 bitmap 字体与实际 strike 不符。
+    改为对采样字形取 max(bitmap_top)，并从 available_sizes 读取 strike 总高度。
+    """
+    import io
+    with open(ttf_path, "rb") as f:
+        font_data = f.read()
+    face = freetype.Face(io.BytesIO(font_data))
+    ascender = _bitmap_strike_ascender(face, size)
+    for s in face.available_sizes:
+        if (s.y_ppem >> 6) == size:
+            return ascender, s.height
+    descender = abs(face.size.descender >> 6)
+    return ascender, ascender + descender
+
+
 def extract(
     ttf_path: str,
     size: int,
@@ -16,16 +34,21 @@ def extract(
     hinting: str = "normal",
     bold: float = 0,
     starsector_xadvance_compat: bool = False,
+    bitmap: bool = False,
 ) -> dict[int, Glyph]:
     """
     从 TTF 文件渲染指定字符集，返回 dict[char_id -> Glyph]。
     supersample: 超采样倍数（1=不超采样，2/4=2x/4x），渲染后 Lanczos 降采样。
     hinting: "normal" | "light" | "none"
+    bitmap: True 时直接读取内嵌位图 strike，不缩放不抗锯齿（supersample/hinting/bold/stroke 均被忽略）。
     """
     import io
     with open(ttf_path, "rb") as f:
         font_data = f.read()
     face = freetype.Face(io.BytesIO(font_data))
+
+    if bitmap:
+        return _extract_bitmap(face, size, char_ids, color, starsector_xadvance_compat)
 
     ss = max(1, supersample)
     face.set_pixel_sizes(0, size * ss)
@@ -113,6 +136,94 @@ def extract(
 
         if starsector_xadvance_compat and xoffset > 0:
             xadvance = xadvance - xoffset
+
+        glyphs[char_id] = Glyph(
+            char_id=char_id,
+            xoffset=xoffset,
+            yoffset=yoffset,
+            xadvance=xadvance,
+            src_image=img,
+        )
+
+    return glyphs
+
+
+def _bitmap_strike_ascender(face: "freetype.Face", size: int) -> int:
+    """通过采样字形的 max(bitmap_top) 确定 bitmap strike 的真实 ascender。
+
+    face.size.ascender 由 OS/2 缩放，与 EBLC 实际值可能相差 1px。
+    采样 ASCII 大写字母和常见 CJK 字符，取最大 bitmap_top。
+    """
+    face.set_pixel_sizes(0, size)
+    sample = [ord(c) for c in "AHbdlf中国人大"]
+    max_top = 0
+    for ch in sample:
+        idx = face.get_char_index(ch)
+        if idx:
+            face.load_glyph(idx, freetype.FT_LOAD_RENDER)
+            s = face.glyph
+            if s.bitmap.rows > 0:
+                max_top = max(max_top, s.bitmap_top)
+    return max_top if max_top > 0 else (face.size.ascender >> 6)
+
+
+def _extract_bitmap(
+    face: "freetype.Face",
+    size: int,
+    char_ids: set[int],
+    color: tuple,
+    starsector_xadvance_compat: bool,
+) -> dict[int, Glyph]:
+    ascender = _bitmap_strike_ascender(face, size)
+
+    r, g, b = color[:3]
+    glyphs: dict[int, Glyph] = {}
+
+    for char_id in char_ids:
+        glyph_index = face.get_char_index(char_id)
+        if glyph_index == 0:
+            continue
+
+        face.load_glyph(glyph_index, freetype.FT_LOAD_RENDER)
+        slot = face.glyph
+        bm = slot.bitmap
+        w, h = bm.width, bm.rows
+
+        xoffset  = slot.bitmap_left
+        xadvance = slot.advance.x >> 6
+
+        if starsector_xadvance_compat and xoffset > 0:
+            xadvance = xadvance - xoffset
+
+        if w == 0 or h == 0:
+            glyphs[char_id] = Glyph(
+                char_id=char_id,
+                xoffset=xoffset,
+                yoffset=0,
+                xadvance=xadvance,
+                src_image=Image.new("RGBA", (1, 1), (0, 0, 0, 0)),
+            )
+            continue
+
+        pitch = abs(bm.pitch)
+        addr  = ctypes.cast(bm._FT_Bitmap.buffer, ctypes.c_void_p).value
+        raw   = ctypes.string_at(addr, h * pitch)
+        arr   = np.frombuffer(raw, dtype=np.uint8).reshape(h, pitch)
+
+        if bm.pixel_mode == 1:  # FT_PIXEL_MODE_MONO: 1-bit packed, MSB first
+            alpha = np.unpackbits(arr, axis=1)[:, :w] * 255
+            alpha = alpha.astype(np.uint8)
+        else:                   # FT_PIXEL_MODE_GRAY: 8-bit
+            alpha = arr[:, :w]
+
+        rgba = np.empty((h, w, 4), dtype=np.uint8)
+        rgba[..., 0] = r
+        rgba[..., 1] = g
+        rgba[..., 2] = b
+        rgba[..., 3] = alpha
+        img = Image.fromarray(rgba, "RGBA")
+
+        yoffset = ascender - slot.bitmap_top
 
         glyphs[char_id] = Glyph(
             char_id=char_id,
