@@ -33,6 +33,7 @@ def extract(
     supersample: int = 1,
     hinting: str = "normal",
     bold: float = 0,
+    alpha_threshold: int | None = None,
     starsector_xadvance_compat: bool = False,
     bitmap: bool = False,
 ) -> dict[int, Glyph]:
@@ -40,6 +41,7 @@ def extract(
     从 TTF 文件渲染指定字符集，返回 dict[char_id -> Glyph]。
     supersample: 超采样倍数（1=不超采样，2/4=2x/4x），渲染后 Lanczos 降采样。
     hinting: "normal" | "light" | "none"
+    alpha_threshold: 普通 TTF 渲染后将 alpha 二值化为 0/255；None 表示保留灰度抗锯齿。
     bitmap: True 时直接读取内嵌位图 strike，不缩放不抗锯齿（supersample/hinting/bold/stroke 均被忽略）。
     """
     import io
@@ -134,6 +136,10 @@ def extract(
                 img = Image.new("RGBA", (1, 1), (0, 0, 0, 0))
                 yoffset = 0
 
+        # Keep thresholding last so supersample resize and bold can finish before alpha becomes 1-bit.
+        if alpha_threshold is not None:
+            img = _threshold_alpha(img, alpha_threshold)
+
         if starsector_xadvance_compat and xoffset > 0:
             xadvance = xadvance - xoffset
 
@@ -146,6 +152,15 @@ def extract(
         )
 
     return glyphs
+
+
+def _threshold_alpha(img: Image.Image, threshold: int) -> Image.Image:
+    threshold = max(0, min(255, int(threshold)))
+    result = img.copy()
+    alpha = result.getchannel("A")
+    alpha = alpha.point(lambda a: 255 if a >= threshold else 0)
+    result.putalpha(alpha)
+    return result
 
 
 def _bitmap_strike_ascender(face: "freetype.Face", size: int) -> int:

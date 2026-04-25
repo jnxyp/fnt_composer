@@ -115,6 +115,9 @@ outputs:
       - { range: [0x4E00, 0x9FFF] }   # Unicode 码位范围（含首尾）
     overrides:                  # 覆盖特定字符属性（合并自 defaults.overrides）
       "字": { xadvance: 10 }
+    glyph_aliases:              # 可选：让目标字符复用另一个字符的字形（合并自 defaults.glyph_aliases）
+      a: A
+      98: 66
     sources:                    # [必填] 字形来源列表，fnt 必须在 ttf 之前
       - ...
 ```
@@ -124,6 +127,7 @@ outputs:
 省略 `face` 时，工具按以下格式自动拼接各来源名称，并在运行时打印：
 
 - fnt 来源：`{文件名}.fnt` 或 `{文件名}.fnt({参数})`
+- bdf 来源：`{文件名}.bdf` 或 `{文件名}.bdf({参数})`
 - ttf 来源：`{文件名}@{size}x{supersample}({参数})`
 - 多个来源之间用 `+` 连接
 
@@ -138,6 +142,10 @@ outputs:
 - 不配置时：沿用第一个提供 info 的来源值，来自 `.fnt` 的 `size` 或纯 `ttf` 输出时的 `src.size`
 - 配置后：只修改写出的 `.fnt` 元数据 `size`，不影响字形渲染、像素高度、`yoffset`、`base` 或 `lineHeight`
 
+#### glyph_aliases 说明
+
+`glyph_aliases` 在 sources 合并之后、overrides 和装箱之前应用。key 是最终输出的目标字符，value 是要复用的来源字符；两边都可以写单字符字符串或数字 char id。比如 `a: A` 会保留 `char id=97`，但它的图像和 metrics 复制自 `char id=65`。这适合把小写英文字母映射到大写字形，同时仍让游戏按小写码位查找。
+
 ---
 
 ### sources — fnt 来源
@@ -147,6 +155,21 @@ outputs:
 ```yaml
 - type: fnt
   path: source/font.fnt         # [必填] .fnt 文件路径（相对项目根目录）
+  y_adjust: 0                   # 本 source 的字形 yoffset 和 source base 同步偏移（正=下移，负=上移）
+  xadvance_adjust: 0            # 对本来源所有字形 xadvance 的增量（正=加宽字间距）
+  extra_line_height: 0          # 本 source 的额外下边距：只增加 source lineHeight，不影响 base / yoffset
+```
+
+---
+
+### sources — bdf 来源
+
+从 BDF bitmap 字体提取字形，像素完全保真，不做重采样。`ENCODING` 会作为输出 char id，`DWIDTH` 作为 `xadvance`，`BBX` 用于生成位图和偏移。
+
+```yaml
+- type: bdf
+  path: source/font.bdf         # [必填] BDF 文件路径（相对项目根目录）
+  color: [255, 255, 255]        # 字形颜色 RGB（默认白色）
   y_adjust: 0                   # 本 source 的字形 yoffset 和 source base 同步偏移（正=下移，负=上移）
   xadvance_adjust: 0            # 对本来源所有字形 xadvance 的增量（正=加宽字间距）
   extra_line_height: 0          # 本 source 的额外下边距：只增加 source lineHeight，不影响 base / yoffset
@@ -168,6 +191,7 @@ outputs:
   supersample: 1                # 超采样倍数（1/2/4/8），越大质量越高但越慢
   hinting: normal               # hinting 模式：normal | light（推荐）| none
   bold: 0                       # alpha 膨胀加粗（目标尺寸像素数，0=不加粗，支持小数）
+  alpha_threshold: null         # 可选：将 alpha 二值化为 0/255（如 128），用于硬边像素字体
   starsector_xadvance_compat: false  # xoffset>0 时 xadvance -= xoffset（兼容 Starsector 推进宽度计算）
   y_adjust: 0                   # 本 source 的字形 yoffset 和 source base 同步偏移（正=下移，负=上移）
   xadvance_adjust: 0            # 对本来源所有字形 xadvance 的增量（正=加宽字间距）
@@ -177,13 +201,17 @@ outputs:
 #### y_adjust / extra_line_height 说明
 
 - **`y_adjust`**：只作用于当前 source。会把该 source 的所有字形 `yoffset` 整体平移，同时把该 source 的 `base` 加上相同的值。
-- **`extra_line_height`**：只作用于当前 source，语义是“额外下边距”。`fnt` 的 source lineHeight = 原始 `lineHeight + extra_line_height`；`ttf` 的 source lineHeight = `size + extra_line_height`。它不会改变该 source 的 `base` 或字形 `yoffset`。
+- **`extra_line_height`**：只作用于当前 source，语义是“额外下边距”。`fnt` 的 source lineHeight = 原始 `lineHeight + extra_line_height`；`bdf` 的 source lineHeight = `FONT_ASCENT + FONT_DESCENT + extra_line_height`；`ttf` 的 source lineHeight = `size + extra_line_height`。它不会改变该 source 的 `base` 或字形 `yoffset`。
 - 两者叠加时，某个 source 的最终 `base = 原始 base + y_adjust`；某个 source 的最终字形 `yoffset` 也只会加上 `y_adjust`。
 - 输出阶段不会把各 source 的 `lineHeight/base` 继续相加，而是分别取所有 source 的最大值：`lineHeight = max(source lineHeight)`，`base = max(source base)`。
 
 #### starsector_xadvance_compat 说明
 
 Starsector 等游戏引擎在计算字符位置时，实际推进量为 `xadvance - xoffset`（而非标准 BMFont 的 `xadvance`）。启用此选项后，脚本会在写出前自动补偿：当 `xoffset > 0` 时，将 `xadvance` 减去 `xoffset`，使渲染结果符合该引擎的预期。
+
+#### alpha_threshold 说明
+
+`alpha_threshold` 只作用于普通 TTF 渲染结果。配置后，每个字形的 alpha 会按阈值二值化：大于等于阈值的像素变为 `255`，低于阈值的像素变为 `0`。这可以消除抗锯齿产生的半透明像素，适合 `victor-pixel.ttf` 这类 outline 像素风字体。建议搭配 `supersample: 1` 使用；如果开启超采样缩放，边缘可能先被平滑再阈值化，形状会更依赖阈值选择。
 
 ---
 
@@ -254,13 +282,15 @@ outputs:
        1. 展开 chars → char_id 集合
        2. 按 sources 顺序：
             fnt 来源 → 解析 .fnt，裁剪字形，应用 y_adjust / xadvance_adjust / extra_line_height
+            bdf 来源 → 解析 .bdf，生成位图字形，应用 y_adjust / xadvance_adjust / extra_line_height
             ttf 来源 → 渲染缺失字符，应用 y_adjust / xadvance_adjust / extra_line_height
        3. 合并字形（fnt 优先，先列出的来源优先）
-       4. 装箱：所有字形按高度降序统一用 Shelf 算法重新排布
+       4. 应用 glyph_aliases
        5. 应用 overrides
-       6. 写出 .fnt + .png
+       6. 装箱：所有字形按高度降序统一用 Shelf 算法重新排布
+       7. 写出 .fnt + .png
 ```
 
 ### 来源优先级
 
-`sources` 列表中靠前的来源优先级更高。同一字符出现在多个来源时，取第一个。fnt 来源必须全部列在 ttf 来源之前。
+`sources` 列表中靠前的来源优先级更高。同一字符出现在多个来源时，取第一个。fnt 来源必须全部列在 ttf / bdf 来源之前。

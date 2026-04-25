@@ -246,7 +246,7 @@ outputs:
         path: source/victor14.fnt
       - type: ttf
         path: "source/ZpixEX2_EX.ttf"
-        size: 14
+        size: 12
         bitmap: true
         color: [255, 255, 255]
     chars:
@@ -257,7 +257,7 @@ outputs:
     atlas_height: -1
     sources:
       - type: fnt
-        path: source/victor16.fnt
+        path: source/victor20.fnt
       - type: ttf
         path: "source/ZpixEX2_EX.ttf"
         size: 16

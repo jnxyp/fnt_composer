@@ -17,6 +17,7 @@ class SourceConfig:
     supersample: int = 1
     hinting: str = "normal"
     bold: float = 0
+    alpha_threshold: int | None = None
     starsector_xadvance_compat: bool = False
     bitmap: bool = False
 
@@ -33,6 +34,7 @@ class OutputConfig:
     padding: int = 2
     on_missing: str = "skip"
     overrides: dict | None = None
+    glyph_aliases: dict[int, int] | None = None
     face: str | None = None
     size: int | None = None
 
@@ -62,6 +64,7 @@ def load(config_path: str) -> RunConfig:
         out_dir = os.path.join(base_dir, "output", sub) if sub else os.path.join(base_dir, "output")
 
         merged_overrides = {**defaults.get("overrides", {}), **out.get("overrides", {})}
+        merged_glyph_aliases = {**defaults.get("glyph_aliases", {}), **out.get("glyph_aliases", {})}
         outputs.append(
             OutputConfig(
                 name=out["name"],
@@ -74,6 +77,7 @@ def load(config_path: str) -> RunConfig:
                 padding=out.get("padding", defaults.get("padding", 2)),
                 on_missing=out.get("on_missing", defaults.get("on_missing", "skip")),
                 overrides=_parse_overrides(merged_overrides),
+                glyph_aliases=_parse_char_id_map(merged_glyph_aliases),
                 face=out.get("face", defaults.get("face")),
                 size=out.get("size", defaults.get("size")),
             )
@@ -85,9 +89,24 @@ def load(config_path: str) -> RunConfig:
 def _parse_overrides(raw: dict) -> dict:
     result = {}
     for key, fields in raw.items():
-        char_id = ord(key) if len(key) == 1 else int(key)
+        char_id = _parse_char_id(key)
         result[char_id] = fields
     return result
+
+
+def _parse_char_id_map(raw: dict) -> dict[int, int]:
+    result = {}
+    for key, value in raw.items():
+        result[_parse_char_id(key)] = _parse_char_id(value)
+    return result
+
+
+def _parse_char_id(value) -> int:
+    if isinstance(value, int):
+        return value
+    if isinstance(value, str) and len(value) == 1:
+        return ord(value)
+    return int(value)
 
 
 def _parse_sources(raw_sources: list, base_dir: str, defaults: dict | None = None) -> list[SourceConfig]:
@@ -111,6 +130,7 @@ def _parse_sources(raw_sources: list, base_dir: str, defaults: dict | None = Non
                 supersample=s.get("supersample", 1),
                 hinting=s.get("hinting", "normal"),
                 bold=s.get("bold", 0),
+                alpha_threshold=s.get("alpha_threshold"),
                 starsector_xadvance_compat=s.get(
                     "starsector_xadvance_compat",
                     defaults.get("starsector_xadvance_compat", False),
@@ -122,12 +142,12 @@ def _parse_sources(raw_sources: list, base_dir: str, defaults: dict | None = Non
 
 
 def _validate_source_order(sources: list[SourceConfig], output_name: str):
-    seen_ttf = False
+    seen_generated = False
     for s in sources:
-        if s.type == "ttf":
-            seen_ttf = True
-        elif s.type == "fnt" and seen_ttf:
-            raise ValueError(f"output '{output_name}': fnt source must come before all ttf sources")
+        if s.type in {"ttf", "bdf"}:
+            seen_generated = True
+        elif s.type == "fnt" and seen_generated:
+            raise ValueError(f"output '{output_name}': fnt source must come before all ttf/bdf sources")
 
 
 def _expand_chars(chars_list: list, base_dir: str) -> set[int]:

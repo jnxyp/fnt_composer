@@ -1,7 +1,8 @@
 import sys
 import os
 import shutil
-from core import config_loader, fnt_parser, ttf_extractor, glyph_merger, atlas_packer, fnt_writer
+import copy
+from core import config_loader, fnt_parser, ttf_extractor, bdf_parser, glyph_merger, atlas_packer, fnt_writer
 
 
 def _apply_vertical_adjustments(base: int, line_height: int, y_adjust: int, extra_line_height: int) -> tuple[int, int, int]:
@@ -23,6 +24,17 @@ def _auto_face(sources) -> str:
             part = f"{stem}.fnt"
             if params:
                 part += f"({','.join(params)})"
+        elif src.type == "bdf":
+            params = []
+            if src.extra_line_height:
+                params.append(f"h{src.extra_line_height:+d}")
+            if src.xadvance_adjust:
+                params.append(f"x{src.xadvance_adjust:+d}")
+            if src.y_adjust:
+                params.append(f"y{src.y_adjust:+d}")
+            part = f"{stem}.bdf"
+            if params:
+                part += f"({','.join(params)})"
         elif src.type == "ttf":
             params = []
             if src.extra_line_height:
@@ -33,12 +45,27 @@ def _auto_face(sources) -> str:
                 params.append(f"y{src.y_adjust:+d}")
             if src.bold:
                 params.append(f"b{src.bold:g}")
+            if src.alpha_threshold is not None:
+                params.append(f"a{src.alpha_threshold}")
             params.append(f"hint:{src.hinting}")
             part = f"{stem}@{src.size}x{src.supersample}({','.join(params)})"
         else:
             continue
         parts.append(part)
     return "+".join(parts)
+
+
+def _apply_glyph_aliases(glyphs: dict, aliases: dict[int, int] | None):
+    if not aliases:
+        return
+
+    for dst_id, src_id in aliases.items():
+        src = glyphs.get(src_id)
+        if src is None:
+            continue
+        alias = copy.copy(src)
+        alias.char_id = dst_id
+        glyphs[dst_id] = alias
 
 
 def run(config_path: str = "config.json"):
@@ -122,6 +149,7 @@ def run(config_path: str = "config.json"):
                     supersample=src.supersample,
                     hinting=src.hinting,
                     bold=src.bold,
+                    alpha_threshold=src.alpha_threshold,
                     starsector_xadvance_compat=src.starsector_xadvance_compat,
                     bitmap=src.bitmap,
                 )
@@ -158,19 +186,48 @@ def run(config_path: str = "config.json"):
 
                 ttf_glyphs_all.update(glyphs)
 
+            elif src.type == "bdf":
+                needed = out.char_ids - set(all_fnt_glyphs.keys()) - set(ttf_glyphs_all.keys())
+                if not needed:
+                    continue
+
+                glyphs, info = bdf_parser.parse(src.path, src.color)
+                glyphs = {cid: g for cid, g in glyphs.items() if cid in needed}
+
+                src_base, src_line_height, yoffset_delta = _apply_vertical_adjustments(
+                    info.get("base", src.size),
+                    info.get("lineHeight", src.size),
+                    src.y_adjust,
+                    src.extra_line_height,
+                )
+                source_bases.append(src_base)
+                source_line_heights.append(src_line_height)
+
+                if not all_fnt_info:
+                    all_fnt_info = info
+
+                if yoffset_delta:
+                    for g in glyphs.values():
+                        g.yoffset += yoffset_delta
+
+                if src.starsector_xadvance_compat:
+                    for g in glyphs.values():
+                        if g.xoffset > 0:
+                            g.xadvance -= g.xoffset
+
+                if src.xadvance_adjust:
+                    for g in glyphs.values():
+                        g.xadvance += src.xadvance_adjust
+
+                ttf_glyphs_all.update(glyphs)
+
         merged = glyph_merger.merge(
             out.char_ids,
             [all_fnt_glyphs, ttf_glyphs_all],
             on_missing=out.on_missing,
         )
 
-        fnt_only = {cid: g for cid, g in merged.items() if g.src_image is None}
-        ttf_only = {cid: g for cid, g in merged.items() if g.src_image is not None}
-        print(f"  fnt chars: {len(fnt_only)}, ttf chars: {len(ttf_only)}")
-
-        pages = atlas_packer.pack(
-            fnt_only, all_fnt_pages, ttf_only, out.atlas_width, out.atlas_height, out.padding
-        )
+        _apply_glyph_aliases(merged, out.glyph_aliases)
 
         _FIELD_MAP = {
             "x": "dst_x",
@@ -188,6 +245,14 @@ def run(config_path: str = "config.json"):
             for field, val in fields.items():
                 attr = _FIELD_MAP.get(field) or field
                 setattr(g, attr, val)
+
+        fnt_only = {cid: g for cid, g in merged.items() if g.src_image is None}
+        ttf_only = {cid: g for cid, g in merged.items() if g.src_image is not None}
+        print(f"  fnt chars: {len(fnt_only)}, ttf chars: {len(ttf_only)}")
+
+        pages = atlas_packer.pack(
+            fnt_only, all_fnt_pages, ttf_only, out.atlas_width, out.atlas_height, out.padding
+        )
 
         char_set = set(merged.keys())
         filtered_kernings = [

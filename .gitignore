@@ -7,6 +7,9 @@ output/
 # 输入字体（字体资源文件请自行添加）
 source/*
 !source/.gitkeep
+!source/victor20.fnt
+!source/victor20_0.png
+!source/victor20_0.xcf
 
 # Python
 __pycache__/
