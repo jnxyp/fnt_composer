@@ -233,6 +233,7 @@ outputs:
       - type: ttf
         path: "source/ZpixEX2_EX.ttf"
         size: 10
+        y_adjust: +1
         bitmap: true
         color: [255, 255, 255]
     chars:
@@ -247,6 +248,7 @@ outputs:
       - type: ttf
         path: "source/ZpixEX2_EX.ttf"
         size: 12
+        y_adjust: +1
         bitmap: true
         color: [255, 255, 255]
     chars:
@@ -261,6 +263,7 @@ outputs:
       - type: ttf
         path: "source/ZpixEX2_EX.ttf"
         size: 16
+        y_adjust: +2
         bitmap: true
         color: [255, 255, 255]
     chars:
